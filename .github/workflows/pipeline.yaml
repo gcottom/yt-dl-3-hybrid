@@ -94,3 +94,4 @@ jobs:
                 SpotifyClientId='${{ secrets.SPOTIFY_CLIENT_ID }}' \
                 SpotifyClientSecret='${{ secrets.SPOTIFY_CLIENT_SECRET }}'" \
                 --resolve-image-repos
+                --capabilities CAPABILITY_IAM
