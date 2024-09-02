@@ -79,7 +79,7 @@ Resources:
   YTDL3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: DOWNLOADS_BUCKET
+      BucketName: !ref DOWNLOADS_BUCKET
 
   # SQS Resources
   YTDL3ConvertSQS:
@@ -219,7 +219,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt YTDL3GenreSQS.QueueName
         - S3CrudPolicy:
-            BucketName: DOWNLOADS_BUCKET
+            BucketName: !Ref DOWNLOADS_BUCKET
         - DynamoDBCrudPolicy:
             TableName: !Ref YTDL3TrackTable
   YTDL3GenreFunction:
@@ -240,7 +240,7 @@ Resources:
               MaximumConcurrency: 100
       Policies:
         - S3CrudPolicy:
-            BucketName: DOWNLOADS_BUCKET
+            BucketName: !Ref DOWNLOADS_BUCKET
         - SQSPollerPolicy:
             QueueName: !GetAtt YTDL3GenreSQS.QueueName
         - SQSSendMessagePolicy:
@@ -316,7 +316,7 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref YTDL3TrackTable
         - S3CrudPolicy:
-            BucketName: DOWNLOADS_BUCKET
+            BucketName: !Ref DOWNLOADS_BUCKET
   YTDL3StatusFunction:
     Type: AWS::Serverless::Function
     Metadata:
