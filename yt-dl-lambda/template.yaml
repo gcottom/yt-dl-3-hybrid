@@ -145,7 +145,7 @@ Resources:
       RegionalCertificateArn: !Ref YTDL3Certificate
       EndpointConfiguration:
         Types:
-          - RegionAL
+          - REGIONAL
 
   # Base Path Mapping
   YTDL3BasePathMapping:
