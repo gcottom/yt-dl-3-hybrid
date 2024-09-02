@@ -45,10 +45,13 @@ jobs:
                 done
             - name: Validate SAM Template
               id: run_sam_validate
-              run: sam validate
+              run: |
+                cd yt-dl-lambda  
+                sam validate
             - name: Build SAM Template
               id: run_sam_build
               run: |
+                cd yt-dl-lambda
                 export CGO_ENABLED=0
                 sam build --debug --cached
             - name: Copy FFMpeg
