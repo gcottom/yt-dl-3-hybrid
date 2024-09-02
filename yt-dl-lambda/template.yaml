@@ -11,6 +11,12 @@ Parameters:
     Type: String
     Description: The AWS account ID where the stack is being deployed
     Default: your_aws_account_id
+    NoEcho: true
+  HOSTED_ZONE_ID:
+    Type: String
+    Description: The Route 53 hosted zone ID for your domain
+    Default: your_hosted_zone_id
+    NoEcho: true
   DOWNLOADS_BUCKET:
     Type: String
     Description: The S3 bucket where the downloads are stored
@@ -19,14 +25,17 @@ Parameters:
     Type: String
     Description: The custom domain name for the API
     Default: your.custom.domain.com
+    NoEcho: true
   SPOTIFY_CLIENT_ID:
     Type: String
     Description: The Spotify client ID
     Default: your_spotify_client_id
+    NoEcho: true
   SPOTIFY_CLIENT_SECRET:
     Type: String
     Description: The Spotify client secret
     Default: your_spotify_client_secret
+    NoEcho: true
 
 Globals:
   Function:
@@ -70,7 +79,7 @@ Resources:
   YTDL3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: yt-dl-3-downloads
+      BucketName: DOWNLOADS_BUCKET
 
   # SQS Resources
   YTDL3ConvertSQS:
@@ -123,17 +132,17 @@ Resources:
   YTDL3Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: your.custom.domain.com
+      DomainName: AWS_DOMAIN
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: your.custom.domain.com
-          HostedZoneId: Z3P5QSUBK4POTI # Replace with your actual Hosted Zone ID
+        - DomainName: AWS_DOMAIN
+          HostedZoneId: HOSTED_ZONE_ID
 
   # Custom Domain Name
   YTDL3CustomDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName: your.custom.domain.com
+      DomainName: AWS_DOMAIN
       RegionalCertificateArn: !Ref YTDL3Certificate
       EndpointConfiguration:
         Types:
@@ -151,8 +160,8 @@ Resources:
   YTDL3DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: Z3P5QSUBK4POTI # Replace with your actual Hosted Zone ID
-      Name: your.custom.domain.com
+      HostedZoneId: HOSTED_ZONE_ID
+      Name: AWS_DOMAIN
       Type: CNAME
       TTL: '60'
       ResourceRecords:
@@ -210,7 +219,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt YTDL3GenreSQS.QueueName
         - S3CrudPolicy:
-            BucketName: yt-dl-3-downloads
+            BucketName: DOWNLOADS_BUCKET
         - DynamoDBCrudPolicy:
             TableName: !Ref YTDL3TrackTable
   YTDL3GenreFunction:
@@ -231,7 +240,7 @@ Resources:
               MaximumConcurrency: 100
       Policies:
         - S3CrudPolicy:
-            BucketName: yt-dl-3-downloads
+            BucketName: DOWNLOADS_BUCKET
         - SQSPollerPolicy:
             QueueName: !GetAtt YTDL3GenreSQS.QueueName
         - SQSSendMessagePolicy:
@@ -308,4 +317,4 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref YTDL3TrackTable
         - S3CrudPolicy:
-            BucketName: yt-dl-3-downloads
+            BucketName: DOWNLOADS_BUCKET
