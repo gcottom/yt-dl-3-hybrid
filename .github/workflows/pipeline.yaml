@@ -83,6 +83,8 @@ jobs:
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset \
                 --resolve-s3 \
+                --capabilities CAPABILITY_IAM \
+                --resolve-image-repos \
                 --stack-name yt-dl-3-hybrid-services \
                 --region ${{ vars.AWS_REGION }} \
                 --parameter-overrides \
@@ -92,6 +94,6 @@ jobs:
                 DownloadsBucket='${{ vars.DOWNLOADS_BUCKET }}' \
                 Domain='${{ secrets.DOMAIN }}' \
                 SpotifyClientId='${{ secrets.SPOTIFY_CLIENT_ID }}' \
-                SpotifyClientSecret='${{ secrets.SPOTIFY_CLIENT_SECRET }}'" \
-                --resolve-image-repos
-                --capabilities CAPABILITY_IAM
+                SpotifyClientSecret='${{ secrets.SPOTIFY_CLIENT_SECRET }}'"
+                
+                
