@@ -63,7 +63,8 @@ jobs:
                 mkdir ffmpeg
                 tar -xf ffmpeg-git-amd64-static.tar.xz -C ffmpeg --strip-components=1
                 cd ../
-                cp bin/ffmpeg/ffmpeg yt-dl-lambda/yt-dl-lambda-go/.aws-sam/build/YTDL3ConverterFunction
+                ls
+                cp bin/ffmpeg/ffmpeg ./yt-dl-lambda/.aws-sam/build/YTDL3ConverterFunction
             - name: Deploy SAM Template
               id: run_sam_deploy
               run: |
