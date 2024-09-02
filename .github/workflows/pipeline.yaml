@@ -66,4 +66,4 @@ jobs:
                 cp bin/ffmpeg/ffmpeg .aws-sam/build/YTDL3ConverterFunction
             - name: Deploy SAM Template
               id: run_sam_deploy
-              run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --stack-name yt-dl-3-hybrid-services --region ${{ vars.AWS_REGION }} --parameter-overrides REGION=${{ vars.AWS_REGION }} ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }} DOWNLOADS_BUCKET=${{ vars.DOWNLOADS_BUCKET }} DOMAIN=${{ secrets.DOMAIN }} SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }} SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }} --resolve-image-repos
+              run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --stack-name yt-dl-3-hybrid-services --region ${{ vars.AWS_REGION }} --parameter-overrides REGION=${{ vars.AWS_REGION }},ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }},DOWNLOADS_BUCKET=${{ vars.DOWNLOADS_BUCKET }},DOMAIN=${{ secrets.DOMAIN }},SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }},SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }} --resolve-image-repos
