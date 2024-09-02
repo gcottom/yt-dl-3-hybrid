@@ -82,6 +82,7 @@ jobs:
                 sam deploy \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset \
+                --resolve-s3 \
                 --stack-name yt-dl-3-hybrid-services \
                 --region ${{ vars.AWS_REGION }} \
                 --parameter-overrides \
@@ -93,4 +94,3 @@ jobs:
                 SPOTIFY_CLIENT_ID='${{ secrets.SPOTIFY_CLIENT_ID }}' \
                 SPOTIFY_CLIENT_SECRET='${{ secrets.SPOTIFY_CLIENT_SECRET }}'" \
                 --resolve-image-repos
-                --resolve-s3
