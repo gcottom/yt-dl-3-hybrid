@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: yt-dl-3-hyrbid-services
+
+Resources:
+  # Logging Resources
+  YTDL3Logs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - '-'
+        - - !Ref YTDL3API
+          - access-logs
+  YTDL3CWRoleArn:
+    Type: AWS::ApiGateway::Account
+    Properties: 
+      CloudWatchRoleArn: !GetAtt YTDL3CloudWatchRole.Arn
+  YTDL3CloudWatchRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs'
+
+ # S3 Bucket
+  YTDL3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: yt-dl-3-downloads
+
+  # SQS Resources
+  YTDL3ConvertSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: yt-dl-3-convert
+      VisibilityTimeout: 320
+  YTDL3GenreSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: yt-dl-3-genre
+      VisibilityTimeout: 520
+  YTDL3MetaSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: yt-dl-3-meta
+      VisibilityTimeout: 120
+
+  # DynamoDB Resources
+  YTDL3TrackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: YTDL3_Tracks
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  #API
+  YTDL3API:
+    Type: AWS::Serverless::Api
+    DependsOn: YTDL3CWRoleArn
+    Properties:
+      StageName: Prod
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+      AccessLogSetting:
+        DestinationArn: !GetAtt YTDL3Logs.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+      Cors:
+        AllowOrigin: "'*'"
+        AllowMethods: "'GET,OPTIONS,POST'"
+
+  # Certificate
+  YTDL3Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: your.custom.domain.com
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: your.custom.domain.com
+          HostedZoneId: Z3P5QSUBK4POTI # Replace with your actual Hosted Zone ID
+
+  # Custom Domain Name
+  YTDL3CustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: your.custom.domain.com
+      RegionalCertificateArn: !Ref YTDL3Certificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Base Path Mapping
+  YTDL3BasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref YTDL3CustomDomain
+      RestApiId: !Ref YTDL3API
+      Stage: Prod
+
+  # Route 53 RecordSet
+  YTDL3DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z3P5QSUBK4POTI # Replace with your actual Hosted Zone ID
+      Name: your.custom.domain.com
+      Type: CNAME
+      TTL: '60'
+      ResourceRecords:
+        - !GetAtt YTDL3CustomDomain.RegionalDomainName
+
+  # Lambda Functions
+  YTDL3InitiatorFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: yt-dl-lambda-go/cmd/initiator
+      Handler: initiator
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 30
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /initiator
+            Method: POST
+            RestApiId: !Ref YTDL3API
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt YTDL3ConvertSQS.QueueName
+  YTDL3ConverterFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: yt-dl-lambda-go/cmd/converter
+      Handler: converter
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      MemorySize: 10240
+      Timeout: 240
+      Events:
+        SQSMessagePublished:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt YTDL3ConvertSQS.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 2
+            ScalingConfig:
+              MaximumConcurrency: 100
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt YTDL3ConvertSQS.QueueName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt YTDL3GenreSQS.QueueName
+        - S3CrudPolicy:
+            BucketName: yt-dl-3-downloads
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
+  YTDL3GenreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      MemorySize: 4096
+      PackageType: Image
+      ImageConfig:
+        Command: ["app.lambda_handler"]
+      Timeout: 500
+      Events:
+        SQSMessagePublished:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt YTDL3GenreSQS.Arn
+            BatchSize: 10
+            ScalingConfig:
+              MaximumConcurrency: 100
+      Policies:
+        - S3CrudPolicy:
+            BucketName: yt-dl-3-downloads
+        - SQSPollerPolicy:
+            QueueName: !GetAtt YTDL3GenreSQS.QueueName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt YTDL3MetaSQS.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
+    Metadata:
+      Dockerfile: yt-dl-lambda-python/ytm-genre/ytm_genre_docker
+      DockerContext: .
+      DockerTag: yt-dl-3-genre-v1
+    

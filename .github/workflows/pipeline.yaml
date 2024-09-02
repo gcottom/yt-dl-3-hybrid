@@ -1,0 +1,67 @@
+on:
+    push:
+        branches:
+            - main
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup Go
+              id: install_go
+              uses: actions/setup-go@v2
+              with:
+                go-version: '1.22.3'
+            - name: Setup Python
+              id: install_python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: '3.11'
+                  architecture: 'x64'
+            - name: Checkout Repo
+              id: checkout_repo
+              uses: actions/checkout@v3
+            - name: Setup SAM
+              id: install_sam
+              uses: aws-actions/setup-sam@v2
+              with:
+                use-installer: true
+            - name: Setup AWS Credentials
+              id: set_credentials
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: us-east-2
+            - name: Download Go Dependencies
+              id: do_go_mod_tidy
+              run: |
+                folders=(
+                    "yt-dl-local-services"
+                    "yt-dl-lambda/yt-dl-lambda-go"
+                )
+                for folder in "${folders[@]}"; do
+                    cd $folder
+                    go mod tidy -go=1.21.6
+                    cd ../
+                done
+            - name: Validate SAM Template
+              id: run_sam_validate
+              run: sam validate
+            - name: Build SAM Template
+              id: run_sam_build
+              run: |
+                export CGO_ENABLED=0
+                sam build --debug --cached
+            - name: Copy FFMpeg
+              id: copy_ffmpeg
+              run: |
+                mkdir bin
+                cd bin
+                wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
+                mkdir ffmpeg
+                tar -xf ffmpeg-git-amd64-static.tar.xz -C ffmpeg --strip-components=1
+                cd ../
+                cp bin/ffmpeg/ffmpeg .aws-sam/build/YTDL3ConverterFunction
+            - name: Deploy SAM Template
+              id: run_sam_deploy
+              run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --stack-name yt-dl-3-hybrid-services --region ${{ env.AWS_REGION }} --parameter-overrides REGION=${{ env.AWS_REGION }} ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }} DOWNLOADS_BUCKET=${{ env.DOWNLOADS_BUCKET }} DOMAIN=${{ secrets.DOMAIN }} SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }} SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }} --resolve-image-repos
