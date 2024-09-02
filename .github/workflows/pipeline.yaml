@@ -93,3 +93,4 @@ jobs:
                 SPOTIFY_CLIENT_ID='${{ secrets.SPOTIFY_CLIENT_ID }}' \
                 SPOTIFY_CLIENT_SECRET='${{ secrets.SPOTIFY_CLIENT_SECRET }}'" \
                 --resolve-image-repos
+                --resolve-s3
