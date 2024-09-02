@@ -79,7 +79,7 @@ Resources:
   YTDL3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !ref DOWNLOADS_BUCKET
+      BucketName: !Ref DOWNLOADS_BUCKET
 
   # SQS Resources
   YTDL3ConvertSQS:
