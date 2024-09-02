@@ -11,10 +11,12 @@ Parameters:
     Type: String
     Description: The AWS account ID where the stack is being deployed
     Default: your_aws_account_id
+    NoEcho: true
   HOSTED_ZONE_ID:
     Type: String
     Description: The Route 53 hosted zone ID for your domain
     Default: your_hosted_zone_id
+    NoEcho: true
   DOWNLOADS_BUCKET:
     Type: String
     Description: The S3 bucket where the downloads are stored
@@ -23,14 +25,17 @@ Parameters:
     Type: String
     Description: The custom domain name for the API
     Default: your.custom.domain.com
+    NoEcho: true
   SPOTIFY_CLIENT_ID:
     Type: String
     Description: The Spotify client ID
     Default: your_spotify_client_id
+    NoEcho: true
   SPOTIFY_CLIENT_SECRET:
     Type: String
     Description: The Spotify client secret
     Default: your_spotify_client_secret
+    NoEcho: true
 
 Globals:
   Function:
