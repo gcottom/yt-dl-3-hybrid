@@ -36,7 +36,6 @@ jobs:
               id: do_go_mod_tidy
               run: |
                 folders=(
-                    "yt-dl-local-services"
                     "yt-dl-lambda/yt-dl-lambda-go"
                 )
                 for folder in "${folders[@]}"; do

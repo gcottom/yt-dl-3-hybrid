@@ -2,6 +2,43 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: yt-dl-3-hyrbid-services
 
+Parameters:
+  REGION:
+    Type: String
+    Description: The AWS region where the stack is being deployed
+    Default: your_aws_region
+  ACCOUNT_ID:
+    Type: String
+    Description: The AWS account ID where the stack is being deployed
+    Default: your_aws_account_id
+  DOWNLOADS_BUCKET:
+    Type: String
+    Description: The S3 bucket where the downloads are stored
+    Default: yt-dl-3-downloads
+  DOMAIN:
+    Type: String
+    Description: The custom domain name for the API
+    Default: your.custom.domain.com
+  SPOTIFY_CLIENT_ID:
+    Type: String
+    Description: The Spotify client ID
+    Default: your_spotify_client_id
+  SPOTIFY_CLIENT_SECRET:
+    Type: String
+    Description: The Spotify client secret
+    Default: your_spotify_client_secret
+
+Globals:
+  Function:
+    Environment:
+      Variables:
+        AWS_REGION: !Ref REGION
+        AWS_ACCOUNT_ID: !Ref ACCOUNT_ID
+        AWS_DOWNLOADS_BUCKET: !Ref DOWNLOADS_BUCKET
+        AWS_DOMAIN: !Ref DOMAIN
+        SPOTIFY_CLIENT_ID: !Ref SPOTIFY_CLIENT_ID
+        SPOTIFY_CLIENT_SECRET: !Ref SPOTIFY_CLIENT_SECRET
+
 Resources:
   # Logging Resources
   YTDL3Logs:
@@ -205,4 +242,70 @@ Resources:
       Dockerfile: yt-dl-lambda-python/ytm-genre/ytm_genre_docker
       DockerContext: .
       DockerTag: yt-dl-3-genre-v1
-    
+  YTDL3YTMetaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      MemorySize: 128
+      PackageType: Image
+      ImageConfig:
+        Command: ["app.lambda_handler"]
+      Timeout: 30
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /meta
+            Method: GET
+            RestApiId: !Ref YTDL3API
+    Metadata:
+      Dockerfile: yt-dl-lambda-python/ytm-meta/ytm_meta_docker
+      DockerContext: .
+      DockerTag: yt-dl-3-meta-v1
+  YTDL3PlaylistFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      MemorySize: 128
+      PackageType: Image
+      ImageConfig:
+        Command: ["app.lambda_handler"]
+      Timeout: 30
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /playlist
+            Method: GET
+            RestApiId: !Ref YTDL3API
+    Metadata:
+      Dockerfile: yt-dl-lambda-python/ytm-playlist-track-list/ytm_playlist_track_list_docker
+      DockerContext: .
+      DockerTag: yt-dl-3-playlist-v1
+  YTDL3MetaFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: yt-dl-lambda-go/cmd/meta
+      Handler: meta
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 30
+
+      Events:
+        SQSMessagePublished:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt YTDL3MetaSQS.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 2
+            ScalingConfig:
+              MaximumConcurrency: 25
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt YTDL3MetaSQS.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
+        - S3CrudPolicy:
+            BucketName: yt-dl-3-downloads
