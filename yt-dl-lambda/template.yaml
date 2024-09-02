@@ -173,7 +173,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd/initiator
+      CodeUri: yt-dl-lambda-go/cmd
       Handler: initiator
       Runtime: provided.al2023
       Architectures:
@@ -197,7 +197,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd/converter
+      CodeUri: yt-dl-lambda-go/cmd
       Handler: converter
       Runtime: provided.al2023
       Architectures:
@@ -301,7 +301,6 @@ Resources:
         - x86_64
       MemorySize: 256
       Timeout: 30
-
       Events:
         SQSMessagePublished:
           Type: SQS
@@ -318,3 +317,25 @@ Resources:
             TableName: !Ref YTDL3TrackTable
         - S3CrudPolicy:
             BucketName: DOWNLOADS_BUCKET
+  YTDL3StatusFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      CodeUri: yt-dl-lambda-go/cmd
+      Handler: status
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 30
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /status
+            Method: GET
+            RestApiId: !Ref YTDL3API
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
