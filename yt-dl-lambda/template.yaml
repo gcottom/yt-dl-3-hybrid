@@ -41,7 +41,6 @@ Globals:
   Function:
     Environment:
       Variables:
-        AWS_REGION: !Ref Region
         AWS_ACCOUNT_ID: !Ref AccountId
         AWS_DOWNLOADS_BUCKET: !Ref DownloadsBucket
         AWS_DOMAIN: !Ref Domain
