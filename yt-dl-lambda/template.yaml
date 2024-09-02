@@ -3,35 +3,35 @@ Transform: AWS::Serverless-2016-10-31
 Description: yt-dl-3-hyrbid-services
 
 Parameters:
-  REGION:
+  Region:
     Type: String
-    Description: The AWS region where the stack is being deployed
-    Default: your_aws_region
-  ACCOUNT_ID:
+    Description: The AWS Region where the stack is being deployed
+    Default: your_aws_Region
+  AccountId:
     Type: String
     Description: The AWS account ID where the stack is being deployed
     Default: your_aws_account_id
     NoEcho: true
-  HOSTED_ZONE_ID:
+  HostedZoneId:
     Type: String
     Description: The Route 53 hosted zone ID for your domain
     Default: your_hosted_zone_id
     NoEcho: true
-  DOWNLOADS_BUCKET:
+  DownloadsBucket:
     Type: String
     Description: The S3 bucket where the downloads are stored
     Default: yt-dl-3-downloads
-  DOMAIN:
+  Domain:
     Type: String
     Description: The custom domain name for the API
     Default: your.custom.domain.com
     NoEcho: true
-  SPOTIFY_CLIENT_ID:
+  SpotifyClientId:
     Type: String
     Description: The Spotify client ID
     Default: your_spotify_client_id
     NoEcho: true
-  SPOTIFY_CLIENT_SECRET:
+  SpotifyClientSecret:
     Type: String
     Description: The Spotify client secret
     Default: your_spotify_client_secret
@@ -41,12 +41,12 @@ Globals:
   Function:
     Environment:
       Variables:
-        AWS_REGION: !Ref REGION
-        AWS_ACCOUNT_ID: !Ref ACCOUNT_ID
-        AWS_DOWNLOADS_BUCKET: !Ref DOWNLOADS_BUCKET
-        AWS_DOMAIN: !Ref DOMAIN
-        SPOTIFY_CLIENT_ID: !Ref SPOTIFY_CLIENT_ID
-        SPOTIFY_CLIENT_SECRET: !Ref SPOTIFY_CLIENT_SECRET
+        AWS_REGION: !Ref Region
+        AWS_ACCOUNT_ID: !Ref AccountId
+        AWS_DOWNLOADS_BUCKET: !Ref DownloadsBucket
+        AWS_DOMAIN: !Ref Domain
+        SPOTIFY_CLIENT_ID: !Ref SpotifyClientId
+        SPOTIFY_CLIENT_SECRET: !Ref SpotifyClientSecret
 
 Resources:
   # Logging Resources
@@ -132,21 +132,21 @@ Resources:
   YTDL3Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: AWS_DOMAIN
+      DomainName: !Ref Domain
       ValidationMethod: DNS
       DomainValidationOptions:
-        - DomainName: AWS_DOMAIN
-          HostedZoneId: HOSTED_ZONE_ID
+        - DomainName: !Ref Domain
+          HostedZoneId: !Ref HostedZoneId
 
   # Custom Domain Name
   YTDL3CustomDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName: AWS_DOMAIN
+      DomainName: !Ref Domain
       RegionalCertificateArn: !Ref YTDL3Certificate
       EndpointConfiguration:
         Types:
-          - REGIONAL
+          - RegionAL
 
   # Base Path Mapping
   YTDL3BasePathMapping:
@@ -160,8 +160,8 @@ Resources:
   YTDL3DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: HOSTED_ZONE_ID
-      Name: AWS_DOMAIN
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Domain
       Type: CNAME
       TTL: '60'
       ResourceRecords:
