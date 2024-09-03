@@ -110,7 +110,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-    # Certificate
+   # Certificate
   YTDL3Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -120,12 +120,35 @@ Resources:
         - DomainName: !Ref Domain
           HostedZoneId: !Ref HostedZoneId
 
-  #API
+  # Custom Domain Name
+  YTDL3CustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    DependsOn: YTDL3Certificate
+    Properties:
+      DomainName: !Ref Domain
+      RegionalCertificateArn: !Ref YTDL3Certificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Route 53 RecordSet
+  YTDL3DNSRecord:
+    Type: AWS::Route53::RecordSet
+    DependsOn: YTDL3CustomDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Domain
+      Type: CNAME
+      TTL: '60'
+      ResourceRecords:
+        - !GetAtt YTDL3CustomDomain.RegionalDomainName
+
+  # API
   YTDL3API:
     Type: AWS::Serverless::Api
     DependsOn: 
       - YTDL3CWRoleArn
-      - YTDL3Certificate
+      - YTDL3DNSRecord
     Properties:
       StageName: YTDL3Stage
       MethodSettings:
@@ -138,11 +161,13 @@ Resources:
       Cors:
         AllowOrigin: "'*'"
         AllowMethods: "'GET,OPTIONS,POST'"
-      Domain:
-        DomainName: !Ref Domain
-        CertificateArn: !Ref YTDL3Certificate
-        Route53:
-          HostedZoneId: !Ref HostedZoneId
+
+  YTDL3BasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn: YTDL3API
+    Properties:
+      DomainName: !Ref Domain
+      RestApiId: !Ref YTDL3API
 
   # Lambda Functions
   YTDL3InitiatorFunction:
