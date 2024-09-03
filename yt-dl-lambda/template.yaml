@@ -129,7 +129,6 @@ Resources:
       Domain:
         DomainName: !Ref Domain
         CertificateArn: !Ref YTDL3Certificate
-      AutoDeploy: true
 
   # Certificate
   YTDL3Certificate:
