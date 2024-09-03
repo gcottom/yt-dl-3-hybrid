@@ -115,7 +115,7 @@ Resources:
     Type: AWS::Serverless::Api
     DependsOn: YTDL3CWRoleArn
     Properties:
-      StageName: Prod
+      StageName: YTDL3APIProd
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
@@ -132,13 +132,13 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref YTDL3API
-      StageName: Prod
+      StageName: YTDL3APIProd
 
   # API Gateway Stage
   YTDL3Stage:
     Type: AWS::ApiGateway::Stage
     Properties:
-      StageName: Prod
+      StageName: YTDL3APIProd
       RestApiId: !Ref YTDL3API
       DeploymentId: !Ref YTDL3Deployment
       MethodSettings:
@@ -175,7 +175,7 @@ Resources:
     Properties:
       DomainName: !Ref YTDL3CustomDomain
       RestApiId: !Ref YTDL3API
-      Stage: Prod
+      Stage: YTDL3APIProd
 
   # Route 53 RecordSet
   YTDL3DNSRecord:
