@@ -126,15 +126,10 @@ Resources:
       Cors:
         AllowOrigin: "'*'"
         AllowMethods: "'GET,OPTIONS,POST'"
-
-  
- # API Gateway Deployment
-  YTDL3Deployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref YTDL3API
-      StageName: !GetAtt YTDL3API.Stage
-
+      Domain:
+        DomainName: !Ref Domain
+        CertificateArn: !Ref YTDL3Certificate
+      AutoDeploy: true
 
   # Certificate
   YTDL3Certificate:
@@ -155,14 +150,6 @@ Resources:
       EndpointConfiguration:
         Types:
           - REGIONAL
-
-  # Base Path Mapping
-  YTDL3BasePathMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    Properties:
-      DomainName: !Ref YTDL3CustomDomain
-      RestApiId: !Ref YTDL3API
-      Stage: !GetAtt YTDL3API.Stage
 
   # Route 53 RecordSet
   YTDL3DNSRecord:
