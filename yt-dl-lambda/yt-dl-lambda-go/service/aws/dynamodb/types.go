@@ -11,7 +11,7 @@ import (
 var region *string
 
 func init() {
-	region = aws.String(os.Getenv("AWSRegion"))
+	region = aws.String(os.Getenv("AWS_REGION"))
 }
 
 const (

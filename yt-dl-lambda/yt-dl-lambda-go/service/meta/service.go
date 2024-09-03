@@ -71,7 +71,7 @@ func (s *Service) SaveMeta(ctx context.Context, data []byte, id string, genre st
 		return err
 	}
 	if _, err = retry.Retry(retry.NewAlgSimpleDefault(), 3, s.DBClient.PutTrack, ctx,
-		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", os.Getenv("AWSDownloadsBucket"), os.Getenv("AWSRegion"), fileName)}); err != nil {
+		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", os.Getenv("AWS_DOWNLOADS_BUCKET"), os.Getenv("AWS_REGION"), fileName)}); err != nil {
 		zaplog.ErrorC(ctx, "failed to update dynamodb", zap.Error(err))
 		return err
 	}
@@ -79,7 +79,7 @@ func (s *Service) SaveMeta(ctx context.Context, data []byte, id string, genre st
 }
 
 func (s *Service) GetYTMetaFromID(ctx context.Context, id string) (TrackMeta, error) {
-	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/meta?id=%s", os.Getenv("LambdaDomain"), id), nil)
+	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/meta?id=%s", os.Getenv("AWS_DOMAIN"), id), nil)
 	if err != nil {
 		zaplog.ErrorC(ctx, "failed to create meta request", zap.Error(err))
 		return TrackMeta{}, err

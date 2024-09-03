@@ -161,6 +161,8 @@ Resources:
       Cors:
         AllowOrigin: "'*'"
         AllowMethods: "'GET,OPTIONS,POST'"
+      BinaryMediaTypes:
+        - "multipart/form-data"
 
   YTDL3BasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping

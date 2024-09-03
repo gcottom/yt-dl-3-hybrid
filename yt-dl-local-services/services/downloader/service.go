@@ -90,7 +90,7 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 		return err
 	}
 	writer.WriteField("id", id)
-	req, err := s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("http://%s/initiator", s.Config.LambdaDomain), reqBody.Bytes())
+	req, err := s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("https://%s/initiator", s.Config.LambdaDomain), reqBody.Bytes())
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (s *Service) GetStatus(ctx context.Context, id string) (*StatusUpdate, erro
 }
 
 func (s *Service) GetProcessingStatus(ctx context.Context, id string) (*ProcessingStatus, error) {
-	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("http://%s/status?id=%s", s.Config.LambdaDomain, id), nil)
+	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/status?id=%s", s.Config.LambdaDomain, id), nil)
 	if err != nil {
 		return nil, err
 	}
