@@ -110,6 +110,27 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
+  # Custom Domain Name
+  YTDL3CustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref Domain
+      RegionalCertificateArn: !Ref YTDL3Certificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Route 53 RecordSet
+  YTDL3DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Domain
+      Type: CNAME
+      TTL: '60'
+      ResourceRecords:
+        - !GetAtt YTDL3CustomDomain.RegionalDomainName
+
   # Certificate
   YTDL3Certificate:
     Type: AWS::CertificateManager::Certificate
