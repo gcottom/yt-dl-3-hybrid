@@ -126,7 +126,6 @@ Resources:
     DependsOn: 
       - YTDL3CWRoleArn
       - YTDL3Certificate
-      - YTDL3CustomDomain
     Properties:
       StageName: YTDL3Stage
       MethodSettings:
