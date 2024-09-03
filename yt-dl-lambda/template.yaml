@@ -120,29 +120,6 @@ Resources:
         - DomainName: !Ref Domain
           HostedZoneId: !Ref HostedZoneId
 
-  # Custom Domain Name
-  YTDL3CustomDomain:
-    Type: AWS::ApiGateway::DomainName
-    DependsOn: YTDL3Certificate
-    Properties:
-      DomainName: !Ref Domain
-      RegionalCertificateArn: !Ref YTDL3Certificate
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-
-  # Route 53 RecordSet
-  YTDL3DNSRecord:
-    Type: AWS::Route53::RecordSet
-    DependsOn: YTDL3CustomDomain
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref Domain
-      Type: CNAME
-      TTL: '60'
-      ResourceRecords:
-        - !GetAtt YTDL3CustomDomain.RegionalDomainName10
-
   #API
   YTDL3API:
     Type: AWS::Serverless::Api
@@ -165,6 +142,8 @@ Resources:
       Domain:
         DomainName: !Ref Domain
         CertificateArn: !Ref YTDL3Certificate
+        Route53:
+          HostedZoneId: !Ref HostedZoneId
 
   # Lambda Functions
   YTDL3InitiatorFunction:
