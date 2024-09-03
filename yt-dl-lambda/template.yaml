@@ -163,6 +163,32 @@ Resources:
         AllowMethods: "'GET,OPTIONS,POST'"
       BinaryMediaTypes:
         - "multipart/form-data"
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: "YTDL3 API"
+          version: "1.0"
+        paths:
+          /initiator:
+            post:
+              consumes:
+                - "multipart/form-data"
+              produces:
+                - "application/json"
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${YTDL3InitiatorFunction.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
+                requestParameters:
+                  integration.request.header.Content-Type: method.request.header.Content-Type
+              responses: {}
+        x-amazon-apigateway-request-validators:
+          all:
+            validateRequestBody: true
+            validateRequestParameters: true
+        x-amazon-apigateway-request-validator: all
+
 
   YTDL3BasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
