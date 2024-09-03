@@ -175,7 +175,7 @@ Resources:
     Properties:
       DomainName: !Ref YTDL3CustomDomain
       RestApiId: !Ref YTDL3API
-      Stage: YTDL3APIProd
+      Stage: !Ref YTDL3Stage
 
   # Route 53 RecordSet
   YTDL3DNSRecord:
