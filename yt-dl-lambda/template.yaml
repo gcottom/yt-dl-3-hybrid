@@ -151,6 +151,7 @@ Resources:
       - YTDL3DNSRecord
       - YTDL3Certificate
     Properties:
+      StageName: Prod
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
