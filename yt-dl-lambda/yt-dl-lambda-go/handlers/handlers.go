@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"os"
 
@@ -26,14 +27,23 @@ type InitiatorResponse struct {
 }
 
 func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	reader := multipart.NewReader(bytes.NewReader([]byte(req.Body)), req.Headers["Content-Type"])
-	form, err := reader.ReadForm(25 << 20)
+	_, params, err := mime.ParseMediaType(req.Headers["Content-Type"])
+	if err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Invalid Content-Type header: %v", err),
+		}, nil
+	}
+
+	reader := multipart.NewReader(bytes.NewReader([]byte(req.Body)), params["boundary"])
+	form, err := reader.ReadForm(50 << 20) // Increase buffer size to 50 MB
 	if err != nil {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       fmt.Sprintf("Failed to parse form: %v", err),
 		}, nil
 	}
+	defer form.RemoveAll()
 	fileHeaders := form.File["file"]
 	if len(fileHeaders) == 0 {
 		return &events.APIGatewayProxyResponse{
