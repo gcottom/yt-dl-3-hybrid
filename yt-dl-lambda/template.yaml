@@ -1,3 +1,4 @@
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: yt-dl-3-hyrbid-services
 
@@ -109,12 +110,27 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
+  # API Gateway Stage
+  YTDL3Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: YTDL3APIProd
+      RestApiId: !Ref YTDL3API
+      DeploymentId: !Ref YTDL3Deployment
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+      AccessLogSetting:
+        DestinationArn: !GetAtt YTDL3Logs.Arn
+        Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
+
   #API
   YTDL3API:
     Type: AWS::Serverless::Api
     DependsOn: YTDL3CWRoleArn
     Properties:
-      StageName: YTDL3APIProd
+      StageName: !Ref YTDL3Stage
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
@@ -126,12 +142,13 @@ Resources:
         AllowOrigin: "'*'"
         AllowMethods: "'GET,OPTIONS,POST'"
 
-  # API Gateway Deployment
+ # API Gateway Deployment
   YTDL3Deployment:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref YTDL3API
-      StageName: YTDL3APIProd
+      StageName: !Ref YTDL3APIProd
+
 
   # Certificate
   YTDL3Certificate:
@@ -159,7 +176,7 @@ Resources:
     Properties:
       DomainName: !Ref YTDL3CustomDomain
       RestApiId: !Ref YTDL3API
-      Stage: YTDL3APIProd
+      Stage: !Ref YTDL3Stage
 
   # Route 53 RecordSet
   YTDL3DNSRecord:
