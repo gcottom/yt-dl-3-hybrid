@@ -27,7 +27,7 @@ type InitiatorResponse struct {
 
 func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	reader := multipart.NewReader(bytes.NewReader([]byte(req.Body)), req.Headers["Content-Type"])
-	form, err := reader.ReadForm(10 << 20)
+	form, err := reader.ReadForm(25 << 20)
 	if err != nil {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 400,
