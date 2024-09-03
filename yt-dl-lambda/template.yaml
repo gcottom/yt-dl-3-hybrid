@@ -110,9 +110,20 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
+   # Certificate
+  YTDL3Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref Domain
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref Domain
+          HostedZoneId: !Ref HostedZoneId
+
   # Custom Domain Name
   YTDL3CustomDomain:
     Type: AWS::ApiGateway::DomainName
+    DependsOn: YTDL3Certificate
     Properties:
       DomainName: !Ref Domain
       RegionalCertificateArn: !Ref YTDL3Certificate
@@ -132,23 +143,12 @@ Resources:
       ResourceRecords:
         - !GetAtt YTDL3CustomDomain.RegionalDomainName
 
-   # Certificate
-  YTDL3Certificate:
-    Type: AWS::CertificateManager::Certificate
-    DependsOn: YTDL3DNSRecord
-    Properties:
-      DomainName: !Ref Domain
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Ref Domain
-          HostedZoneId: !Ref HostedZoneId
-
   # API
   YTDL3API:
     Type: AWS::Serverless::Api
     DependsOn: 
       - YTDL3CWRoleArn
-      - YTDL3Certificate
+      - YTDL3DNSRecord
     Properties:
       StageName: Prod
       MethodSettings:
