@@ -113,6 +113,7 @@ Resources:
    # Certificate
   YTDL3Certificate:
     Type: AWS::CertificateManager::Certificate
+    DependsOn: YTDL3DNSRecord
     Properties:
       DomainName: !Ref Domain
       ValidationMethod: DNS
@@ -123,7 +124,6 @@ Resources:
   # Custom Domain Name
   YTDL3CustomDomain:
     Type: AWS::ApiGateway::DomainName
-    DependsOn: YTDL3Certificate
     Properties:
       DomainName: !Ref Domain
       RegionalCertificateArn: !Ref YTDL3Certificate
@@ -149,8 +149,8 @@ Resources:
     DependsOn: 
       - YTDL3CWRoleArn
       - YTDL3DNSRecord
+      - YTDL3Certificate
     Properties:
-      StageName: YTDL3Stage
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
