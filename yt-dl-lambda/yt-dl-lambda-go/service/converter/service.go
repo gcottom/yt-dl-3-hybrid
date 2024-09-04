@@ -13,7 +13,7 @@ import (
 )
 
 func Convert(id string) error {
-	var args = []string{"-i", fmt.Sprintf("/tmp/%s.temp", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/temp/%s.mp3", id)}
+	var args = []string{"-i", fmt.Sprintf("/tmp/%s.temp", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/tmp/%s.mp3", id)}
 	cmd := exec.Command(path.Join(os.Getenv("LAMBDA_TASK_ROOT"), "ffmpeg"), args...)
 
 	zaplog.Info("converting file", zap.String("id", id))
