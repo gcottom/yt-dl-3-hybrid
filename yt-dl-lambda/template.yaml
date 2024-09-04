@@ -80,6 +80,11 @@ Resources:
     Properties:
       BucketName: !Ref DownloadsBucket
       AccessControl: 'PublicRead'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
   BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
