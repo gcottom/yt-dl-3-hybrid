@@ -14,7 +14,7 @@ import (
 )
 
 func Convert(input *os.File, id string) error {
-	var args = []string{"-i", fmt.Sprintf("/tmp/%s", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/tmp/%s.mp3", id)}
+	var args = []string{"-i", fmt.Sprintf("/tmp/%s", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/tmp/%s-converted.mp3", id)}
 	cmd := exec.Command(path.Join(os.Getenv("LAMBDA_TASK_ROOT"), "ffmpeg"), args...)
 
 	if err := cmd.Start(); err != nil {
@@ -25,8 +25,8 @@ func Convert(input *os.File, id string) error {
 		zaplog.Error("Failed to wait for ffmpeg", zap.Error(err))
 		return err
 	}
-	defer os.Remove(fmt.Sprintf("/tmp/%s.mp3", id))
-	data, err := os.ReadFile(fmt.Sprintf("/tmp/%s.mp3", id))
+	defer os.Remove(fmt.Sprintf("/tmp/%s-converted.mp3", id))
+	data, err := os.ReadFile(fmt.Sprintf("/tmp/%s-converted.mp3", id))
 	if err != nil {
 		zaplog.Error("Failed to read file", zap.Error(err))
 		return err
