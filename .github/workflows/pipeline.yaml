@@ -49,7 +49,7 @@ jobs:
                 cd yt-dl-lambda
                 cd yt-dl-lambda-go
                 cd cmd
-                folders=$(ls)
+                folders=($(ls -d */ | xargs -n 1 basename))
                 for folder in "${folders[@]}"; do
                     cd $folder
                     go build -o $folder
