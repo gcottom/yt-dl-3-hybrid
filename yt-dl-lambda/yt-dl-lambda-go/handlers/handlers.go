@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/gcottom/go-zaplog"
 	"github.com/gcottom/retry"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/pkg/http_client"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/aws/dynamodb"
@@ -16,6 +17,7 @@ import (
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/aws/sqs"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/converter"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/meta"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -50,6 +52,7 @@ func Convert(sqsEvent events.SQSEvent) error {
 		id := record.Body
 		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3File, id, ".temp", s3.YTDLS3Bucket)
 		if err != nil {
+			zaplog.Error("Failed to download file", zap.Error(err))
 			return err
 		}
 		data := res[0].(*os.File)
@@ -57,6 +60,7 @@ func Convert(sqsEvent events.SQSEvent) error {
 		defer os.Remove(data.Name())
 		dynamoClient := dynamodb.CreateDynamoClient(context.Background())
 		if err := converter.Convert(id); err != nil {
+			zaplog.Error("Failed to convert file", zap.Error(err))
 			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}

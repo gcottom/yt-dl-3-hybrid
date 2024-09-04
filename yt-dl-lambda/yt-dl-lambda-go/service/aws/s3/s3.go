@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/gcottom/go-zaplog"
+	"go.uber.org/zap"
 )
 
 func DeleteFromS3(id, bucket string) error {
@@ -38,6 +40,7 @@ func DownloadFromS3File(id, tempext, bucket string) (*os.File, error) {
 	sess := session.Must(session.NewSession(&conf))
 	file, err := os.Create("/tmp/" + id + tempext)
 	if err != nil {
+		zaplog.Error("error creating file", zap.Error(err))
 		return nil, err
 	}
 	downloader := s3manager.NewDownloader(sess)
@@ -45,9 +48,11 @@ func DownloadFromS3File(id, tempext, bucket string) (*os.File, error) {
 		Bucket: &bucket,
 		Key:    &id,
 	}); err != nil {
+		zaplog.Error("error downloading file", zap.Error(err))
 		return nil, err
 	}
 	if _, err = file.Seek(0, 0); err != nil {
+		zaplog.Error("error seeking file", zap.Error(err))
 		return nil, err
 	}
 	return file, nil
