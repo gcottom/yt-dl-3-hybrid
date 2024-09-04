@@ -43,6 +43,17 @@ jobs:
                     go mod tidy -go=1.21.6
                     cd ../
                 done
+            - name: Build Go Binaries
+              id: do_go_build
+              run: |
+                folders=(
+                    "yt-dl-lambda/yt-dl-lambda-go/cmd"
+                )
+                for folder in "${folders[@]}"; do
+                    cd $folder
+                    go build -o $folder
+                    cd ../
+                done
             - name: Validate SAM Template
               id: run_sam_validate
               run: |
