@@ -161,6 +161,7 @@ func (s *Service) ScheduledProcessingCallback(ctx context.Context, id string) {
 			s.StatusQueue <- StatusUpdate{ID: id, Status: status[0].(*ProcessingStatus).Status}
 		}
 		if status[0] != nil && status[0].(*ProcessingStatus).Status == StatusComplete || status[0].(*ProcessingStatus).Status == StatusFailed {
+			zaplog.InfoC(ctx, "processing callback exiting", zap.String("id", id), zap.String("status", status[0].(*ProcessingStatus).Status))
 			return
 		}
 		time.Sleep(10 * time.Second)

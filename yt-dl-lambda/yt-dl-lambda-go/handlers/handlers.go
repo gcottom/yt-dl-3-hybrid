@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -106,14 +107,25 @@ func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse,
 			Body:       "Missing id parameter",
 		}, nil
 	}
-	tracks, err := dynamoClient.GetTrackByID(context.Background(), id)
+	track, err := dynamoClient.GetTrackByID(context.Background(), id)
 	if err != nil {
+		var notFoundError *dynamodb.DBNotFoundError
+		if errors.As(err, &notFoundError) {
+			track := dynamodb.DBTrack{ID: id, Status: dynamodb.StatusProcessing}
+			response, er := json.Marshal(track)
+			if er == nil {
+				return &events.APIGatewayProxyResponse{
+					StatusCode: 200,
+					Body:       string(response),
+				}, nil
+			}
+		}
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       fmt.Sprintf("Failed to get tracks: %v", err),
 		}, nil
 	}
-	response, err := json.Marshal(tracks)
+	response, err := json.Marshal(track)
 	if err != nil {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
