@@ -13,3 +13,7 @@ func init() {
 	region = aws.String(os.Getenv("AWS_REGION"))
 	YTDLS3Bucket = os.Getenv("AWS_DOWNLOADS_BUCKET")
 }
+
+type PresignedURL struct {
+	URL string `json:"url"`
+}

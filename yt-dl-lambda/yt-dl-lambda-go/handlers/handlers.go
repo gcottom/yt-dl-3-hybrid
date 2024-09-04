@@ -1,13 +1,9 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime"
-	"mime/multipart"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -27,67 +23,8 @@ type InitiatorResponse struct {
 }
 
 func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	_, params, err := mime.ParseMediaType(req.Headers["Content-Type"])
-	if err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Invalid Content-Type header: %v", err),
-		}, nil
-	}
-
-	reader := multipart.NewReader(bytes.NewReader([]byte(req.Body)), params["boundary"])
-	form, err := reader.ReadForm(50 << 20) // Increase buffer size to 50 MB
-	if err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("Failed to parse form: %v", err),
-		}, nil
-	}
-	defer form.RemoveAll()
-	fileHeaders := form.File["file"]
-	if len(fileHeaders) == 0 {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 400,
-			Body:       "Missing file",
-		}, nil
-	}
-	id := form.Value["id"]
-	if len(id) == 0 {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 400,
-			Body:       "Missing id parameter",
-		}, nil
-	}
-	file, err := fileHeaders[0].Open()
-	if err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 500,
-			Body:       fmt.Sprintf("Failed to open file: %v", err),
-		}, nil
-	}
-	defer file.Close()
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, file)
-	if err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 500,
-			Body:       fmt.Sprintf("Failed to read file: %v", err),
-		}, nil
-	}
-	if err := s3.UploadToS3(&buf, id[0], s3.YTDLS3Bucket); err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 500,
-			Body:       fmt.Sprintf("Failed to upload file: %v", err),
-		}, nil
-	}
-	dynamoClient := dynamodb.CreateDynamoClient(context.Background())
-	if err := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: id[0], Status: dynamodb.StatusProcessing}); err != nil {
-		return &events.APIGatewayProxyResponse{
-			StatusCode: 500,
-			Body:       fmt.Sprintf("Failed to update db: %v", err),
-		}, nil
-	}
-	if err := sqs.SQSSendMessage(sqs.SQSConverterURL, id[0]); err != nil {
+	id := req.QueryStringParameters["id"]
+	if err := sqs.SQSSendMessage(sqs.SQSConverterURL, id); err != nil {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       fmt.Sprintf("Failed to send message: %v", err),
@@ -188,6 +125,34 @@ func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse,
 	return &events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body:       string(response),
+	}, nil
+}
+
+func GetPresignedUploadURL(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	id, ok := req.QueryStringParameters["id"]
+	if !ok {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       "Missing id parameter",
+		}, nil
+	}
+	url, err := s3.GeneratePresignedUploadURL(id, s3.YTDLS3Bucket)
+	if err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 500,
+			Body:       fmt.Sprintf("Failed to get presigned url: %v", err),
+		}, nil
+	}
+	jsonResponse, err := json.Marshal(url)
+	if err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 500,
+			Body:       fmt.Sprintf("Failed to marshal presigned url to json: %v", err),
+		}, nil
+	}
+	return &events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Body:       string(jsonResponse),
 	}, nil
 }
 

@@ -89,13 +89,41 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 	if err := writer.Close(); err != nil {
 		return err
 	}
-	writer.WriteField("id", id)
-	req, err := s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("https://%s/initiator", s.Config.LambdaDomain), reqBody.Bytes())
+	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/s3signer?id=%s", s.Config.LambdaDomain, id), nil)
+	if err != nil {
+		return err
+	}
+	resp, code, err := s.HTTPClient.DoRequest(req)
+	if err != nil {
+		return fmt.Errorf("failed to get signed URL: %w", err)
+	}
+	if code != http.StatusOK {
+		return fmt.Errorf("failed to get signed URL: %d", code)
+	}
+	var data struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(resp, &data); err != nil {
+		return fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	req, err = s.HTTPClient.CreateRequest(http.MethodPut, data.URL, reqBody.Bytes())
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	_, code, err := s.HTTPClient.DoRequest(req)
+	_, code, err = s.HTTPClient.DoRequest(req)
+	if err != nil {
+		return fmt.Errorf("failed to upload file: %w", err)
+	}
+	if code != http.StatusOK {
+		return fmt.Errorf("failed to upload file: %d", code)
+	}
+	req, err = s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("https://%s/initiator", s.Config.LambdaDomain), reqBody.Bytes())
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	_, code, err = s.HTTPClient.DoRequest(req)
 	if err != nil {
 		return fmt.Errorf("failed to process download: %w", err)
 	}

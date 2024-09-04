@@ -3,6 +3,7 @@ package s3
 import (
 	"io"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -90,4 +91,19 @@ func S3GetFileExists(id, bucket string) bool {
 		Key:    &id,
 	})
 	return err == nil
+}
+
+func GeneratePresignedUploadURL(id, bucket string) (PresignedURL, error) {
+	conf := aws.Config{Region: region}
+	sess := session.Must(session.NewSession(&conf))
+	svc := s3.New(sess)
+	req, _ := svc.PutObjectRequest(&s3.PutObjectInput{
+		Bucket: &bucket,
+		Key:    &id,
+	})
+	url, err := req.Presign(5 * time.Minute)
+	if err != nil {
+		return PresignedURL{}, err
+	}
+	return PresignedURL{URL: url}, nil
 }
