@@ -150,7 +150,7 @@ Resources:
       - YTDL3CWRoleArn
       - YTDL3DNSRecord
     Properties:
-      StageName: Prod
+      StageName: YTDL3Prod
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
@@ -160,7 +160,7 @@ Resources:
         Format: $context.extendedRequestId $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId
       Cors:
         AllowOrigin: "'*'"
-        AllowMethods: "'GET,OPTIONS,POST'"
+        AllowMethods: "'GET,OPTIONS'"
 
   YTDL3BasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
@@ -168,7 +168,7 @@ Resources:
     Properties:
       DomainName: !Ref Domain
       RestApiId: !Ref YTDL3API
-      Stage: Prod
+      Stage: YTDL3Prod
 
   # Lambda Functions
   YTDL3S3SignerFunction:
