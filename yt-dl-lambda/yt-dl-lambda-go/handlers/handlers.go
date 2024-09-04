@@ -54,8 +54,7 @@ func Convert(sqsEvent events.SQSEvent) error {
 		data := res[0].(*aws.WriteAtBuffer)
 		dynamoClient := dynamodb.CreateDynamoClient(context.Background())
 		if err := converter.Convert(data.Bytes(), id); err != nil {
-			_, re := retry.Retry(retry.NewAlgSimpleDefault(), 3, dynamoClient.PutTrack, context.Background(), &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed})
-			if re != nil {
+			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}
 			return err
@@ -89,8 +88,7 @@ func Meta(sqsEvent events.SQSEvent) error {
 		}
 		data := res[0].(*aws.WriteAtBuffer)
 		if err := metaService.SaveMeta(context.Background(), data.Bytes(), recordData.ID, recordData.Genre); err != nil {
-			_, re := retry.Retry(retry.NewAlgSimpleDefault(), 3, dynamoClient.PutTrack, context.Background(), &dynamodb.DBTrack{ID: recordData.ID, Status: dynamodb.StatusFailed})
-			if re != nil {
+			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: recordData.ID, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}
 			return err
