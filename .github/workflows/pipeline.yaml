@@ -55,7 +55,6 @@ jobs:
                 export CGO_ENABLED=0
                 sam build \
                 --debug \
-                --cached \
                 --parameter-overrides \
                 "Region='${{ vars.AWS_REGION }}' \
                 AccountId='${{ secrets.AWS_ACCOUNT_ID }}' \

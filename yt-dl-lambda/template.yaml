@@ -176,7 +176,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd
+      CodeUri: yt-dl-lambda-go/cmd/s3signer
       Handler: s3signer
       Runtime: provided.al2023
       Architectures:
@@ -198,7 +198,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd
+      CodeUri: yt-dl-lambda-go/cmd/initiator
       Handler: initiator
       Runtime: provided.al2023
       Architectures:
@@ -220,7 +220,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd
+      CodeUri: yt-dl-lambda-go/cmd/converter
       Handler: converter
       Runtime: provided.al2023
       Architectures:
@@ -345,7 +345,7 @@ Resources:
     Metadata:
       BuildMethod: go1.x
     Properties:
-      CodeUri: yt-dl-lambda-go/cmd
+      CodeUri: yt-dl-lambda-go/cmd/status
       Handler: status
       Runtime: provided.al2023
       Architectures:
