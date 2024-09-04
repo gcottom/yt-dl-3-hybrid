@@ -168,7 +168,7 @@ Resources:
     Properties:
       DomainName: !Ref Domain
       RestApiId: !Ref YTDL3API
-      Stage: YTDL3Prod
+      Stage: !Ref YTDL3API.Stage
 
   # Lambda Functions
   YTDL3S3SignerFunction:
