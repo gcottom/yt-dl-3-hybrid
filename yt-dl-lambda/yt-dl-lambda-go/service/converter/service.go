@@ -24,7 +24,7 @@ func Convert(id string) error {
 	cmd := exec.Command(ffmpegPath, args...)
 
 	// Capture stderr to get detailed ffmpeg error messages
-	resultBuffer := bytes.NewBuffer(make([]byte, 5<<20)) // pre allocate 5MiB buffer
+	resultBuffer := bytes.NewBuffer(make([]byte, 0)) // don't preallocate buffer size, it grows automatically and preallocation corrupts the output
 
 	cmd.Stderr = os.Stderr    // bind log stream to stderr
 	cmd.Stdout = resultBuffer // stdout result will be written here
