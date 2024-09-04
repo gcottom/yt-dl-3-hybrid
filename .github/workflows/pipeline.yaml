@@ -53,6 +53,8 @@ jobs:
               run: |
                 cd yt-dl-lambda
                 export CGO_ENABLED=0
+                export GOOS=linux
+                export GOARCH=amd64
                 sam build \
                 --debug \
                 --parameter-overrides \
@@ -78,6 +80,9 @@ jobs:
               id: run_sam_deploy
               run: |
                 cd yt-dl-lambda
+                export CGO_ENABLED=0
+                export GOOS=linux
+                export GOARCH=amd64
                 sam deploy \
                 --no-confirm-changeset \
                 --no-fail-on-empty-changeset \
