@@ -18,7 +18,7 @@ def lambda_handler(event, context):
             id = str(record['body'])
             conv = id + ".mp3"
             track = "/tmp/" + conv
-            s3.meta.client.download_file(os.environ["AWS_DOWNLOADS_BUCKET"], conv, track)
+            s3.meta.client.download_file(os.environ.get("AWS_DOWNLOADS_BUCKET"), conv, track)
             tops = 5
             
             t = top_tags(track, model='MSD_musicnn', topN=tops, print_tags=False)
@@ -68,7 +68,7 @@ def lambda_handler(event, context):
             print(z.title())
             try:
                 sqs_client.send_message(
-                    QueueUrl="https://sqs." + os.environ['AWSRegion'] + ".amazonaws.com/" + os.environ['AWSAccount'] + "/yt-dl-meta",
+                    QueueUrl="https://sqs." + os.environ.get('AWSRegion') + ".amazonaws.com/" + os.environ.get('AWSAccount') + "/yt-dl-meta",
                     MessageBody=json.dumps({
                         "id": id,
                         "genre": z.title()
