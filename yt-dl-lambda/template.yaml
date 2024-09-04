@@ -80,23 +80,7 @@ Resources:
     Properties:
       BucketName: !Ref DownloadsBucket
       AccessControl: 'PublicRead'
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        IgnorePublicAcls: false
-        BlockPublicPolicy: false
-        RestrictPublicBuckets: false
-  BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref DownloadsBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Sub 'arn:aws:s3:::${DownloadsBucket}/*'
-
+    
   # SQS Resources
   YTDL3ConvertSQS:
     Type: AWS::SQS::Queue

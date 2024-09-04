@@ -71,7 +71,7 @@ func (s *Service) SaveMeta(ctx context.Context, data []byte, id string, genre st
 		return err
 	}
 	if _, err = retry.Retry(retry.NewAlgSimpleDefault(), 3, s.DBClient.PutTrack, ctx,
-		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", os.Getenv("AWS_DOWNLOADS_BUCKET"), os.Getenv("AWS_REGION"), fileName)}); err != nil {
+		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fileName}); err != nil {
 		zaplog.ErrorC(ctx, "failed to update dynamodb", zap.Error(err))
 		return err
 	}

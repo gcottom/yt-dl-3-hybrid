@@ -107,3 +107,18 @@ func GeneratePresignedUploadURL(id, bucket string) (PresignedURL, error) {
 	}
 	return PresignedURL{URL: url}, nil
 }
+
+func GeneratePresignedDownloadURL(id, bucket string) (PresignedURL, error) {
+	conf := aws.Config{Region: region}
+	sess := session.Must(session.NewSession(&conf))
+	svc := s3.New(sess)
+	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &id,
+	})
+	url, err := req.Presign(5 * time.Minute)
+	if err != nil {
+		return PresignedURL{}, err
+	}
+	return PresignedURL{URL: url}, nil
+}

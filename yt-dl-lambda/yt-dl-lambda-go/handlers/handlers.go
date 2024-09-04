@@ -125,6 +125,16 @@ func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse,
 			Body:       fmt.Sprintf("Failed to get tracks: %v", err),
 		}, nil
 	}
+	if track.URL != "" {
+		url, err := s3.GeneratePresignedDownloadURL(track.URL, s3.YTDLS3Bucket)
+		if err != nil {
+			return &events.APIGatewayProxyResponse{
+				StatusCode: 500,
+				Body:       fmt.Sprintf("Failed to get presigned url: %v", err),
+			}, nil
+		}
+		track.URL = url.URL
+	}
 	response, err := json.Marshal(track)
 	if err != nil {
 		return &events.APIGatewayProxyResponse{
