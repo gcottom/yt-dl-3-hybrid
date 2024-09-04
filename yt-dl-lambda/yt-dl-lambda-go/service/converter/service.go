@@ -18,7 +18,7 @@ func Convert(id string) error {
 	inputPath := fmt.Sprintf("/tmp/%s.temp", id)
 	outputPath := fmt.Sprintf("/tmp/%s.mp3", id)
 	ffmpegPath := path.Join(os.Getenv("LAMBDA_TASK_ROOT"), "ffmpeg")
-
+	os.Remove(outputPath)
 	// Define ffmpeg command arguments
 	args := []string{"-i", inputPath, "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", outputPath}
 	cmd := exec.Command(ffmpegPath, args...)
