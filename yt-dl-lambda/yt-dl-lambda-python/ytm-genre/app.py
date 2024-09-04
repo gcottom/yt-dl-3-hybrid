@@ -68,7 +68,7 @@ def lambda_handler(event, context):
             print(z.title())
             try:
                 sqs_client.send_message(
-                    QueueUrl="https://sqs." + os.environ.get('AWSRegion') + ".amazonaws.com/" + os.environ.get('AWSAccount') + "/yt-dl-3-meta",
+                    QueueUrl="https://sqs." + os.environ.get('AWS_REGION') + ".amazonaws.com/" + os.environ.get('AWS_ACCOUNT_ID') + "/yt-dl-3-meta",
                     MessageBody=json.dumps({
                         "id": id,
                         "genre": z.title()
