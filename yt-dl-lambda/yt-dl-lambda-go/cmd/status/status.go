@@ -15,7 +15,7 @@ func main() {
 func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	switch req.HTTPMethod {
 	case http.MethodGet:
-		return handlers.Initiate(req)
+		return handlers.Status(req)
 	default:
 		return handlers.UnhandledMethod()
 	}

@@ -118,17 +118,17 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 	if code != http.StatusOK {
 		return fmt.Errorf("failed to upload file: %d", code)
 	}
-	req, err = s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("https://%s/initiator", s.Config.LambdaDomain), reqBody.Bytes())
+	req, err = s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/initiator?id=%s", s.Config.LambdaDomain, id), reqBody.Bytes())
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	_, code, err = s.HTTPClient.DoRequest(req)
 	if err != nil {
-		return fmt.Errorf("failed to process download: %w", err)
+		return fmt.Errorf("failed to initiate cloud processor: %w", err)
 	}
 	if code != http.StatusOK {
-		return fmt.Errorf("failed to process download: %d", code)
+		return fmt.Errorf("failed to initiate cloud processor: %d", code)
 	}
 	return nil
 }
