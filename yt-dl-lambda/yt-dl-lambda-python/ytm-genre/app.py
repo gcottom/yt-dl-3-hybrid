@@ -17,7 +17,7 @@ def lambda_handler(event, context):
         try:
             id = str(record['body'])
             conv = id + ".mp3"
-            track = "/tmp/" + id
+            track = "/tmp/" + conv
             s3.meta.client.download_file(os.environ["AWS_DOWNLOADS_BUCKET"], conv, track)
             tops = 5
             

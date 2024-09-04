@@ -1,16 +1,12 @@
 package downloader
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/gcottom/go-zaplog"
@@ -78,16 +74,8 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 		return err
 	}
 	defer file.Close()
-	reqBody := &bytes.Buffer{}
-	writer := multipart.NewWriter(reqBody)
-	part, err := writer.CreateFormFile("file", filepath.Base(path))
+	reqBody, err := os.ReadFile(path)
 	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(part, file); err != nil {
-		return err
-	}
-	if err := writer.Close(); err != nil {
 		return err
 	}
 	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/s3signer?id=%s", s.Config.LambdaDomain, id), nil)
@@ -107,33 +95,29 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 	if err := json.Unmarshal(resp, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	zaplog.Info("uploading file", zap.String("filepath", path), zap.String("id", id), zap.Int("size", len(reqBody.Bytes())))
-
-	client := &http.Client{}
-	req, err = http.NewRequest(http.MethodPut, data.URL, reqBody)
-
+	zaplog.Info("uploading file", zap.String("filepath", path), zap.String("id", id))
+	req, err = s.HTTPClient.CreateOctetStreamRequest(http.MethodPut, data.URL, reqBody)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer res.Body.Close()
-	req, err = s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/initiator?id=%s", s.Config.LambdaDomain, id), reqBody.Bytes())
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
 	_, code, err = s.HTTPClient.DoRequest(req)
 	if err != nil {
-		return fmt.Errorf("failed to initiate cloud processor: %w", err)
+		return fmt.Errorf("failed to upload file: %w", err)
 	}
 	if code != http.StatusOK {
-		return fmt.Errorf("failed to initiate cloud processor: %d", code)
+		return fmt.Errorf("failed to upload file: %d", code)
+	}
+	req, err = s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/initiator?id=%s", s.Config.LambdaDomain, id), nil)
+	if err != nil {
+		return err
+	}
+	_, code, err = s.HTTPClient.DoRequest(req)
+	if err != nil {
+		return fmt.Errorf("failed to initiate processing: %w", err)
+	}
+	if code != http.StatusOK {
+		return fmt.Errorf("failed to initiate processing: %d", code)
 	}
 	return nil
 }
