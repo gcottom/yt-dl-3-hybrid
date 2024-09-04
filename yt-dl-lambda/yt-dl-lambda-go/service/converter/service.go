@@ -14,7 +14,7 @@ import (
 )
 
 func Convert(input *os.File, id string) error {
-	var args = []string{"-i", fmt.Sprintf("/tmp/%s", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/tmp/%s-converted.mp3", id)}
+	var args = []string{"-i", fmt.Sprintf("/tmp/%s.temp", id), "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", fmt.Sprintf("/tmp/%s-converted.mp3", id)}
 	cmd := exec.Command(path.Join(os.Getenv("LAMBDA_TASK_ROOT"), "ffmpeg"), args...)
 
 	if err := cmd.Start(); err != nil {

@@ -48,7 +48,7 @@ func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespons
 func Convert(sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		id := record.Body
-		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3File, id, "", s3.YTDLS3Bucket)
+		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3File, id, ".temp", s3.YTDLS3Bucket)
 		if err != nil {
 			return err
 		}
