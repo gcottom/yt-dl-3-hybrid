@@ -1,4 +1,4 @@
-package s3signer
+package main
 
 import (
 	"net/http"
