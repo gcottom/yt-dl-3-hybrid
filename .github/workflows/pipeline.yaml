@@ -46,7 +46,9 @@ jobs:
             - name: Build Go Binaries
               id: do_go_build
               run: |
-                cd yt-dl-lambda/yt-dl-lambda-go/cmd
+                cd yt-dl-lambda
+                cd yt-dl-lambda-go
+                cd cmd
                 folders=$(ls -d */ | sed 's#/##')
                 for folder in "${folders[@]}"; do
                     cd $folder
