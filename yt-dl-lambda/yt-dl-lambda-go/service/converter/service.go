@@ -20,12 +20,14 @@ func Convert(id string) error {
 	ffmpegPath := path.Join(os.Getenv("LAMBDA_TASK_ROOT"), "ffmpeg")
 	os.Remove(outputPath)
 	// Define ffmpeg command arguments
-	args := []string{"-i", inputPath, "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", outputPath}
+	args := []string{"-i", inputPath, "-c:a", "libmp3lame", "-b:a", "256k", "-f", "mp3", "-"}
 	cmd := exec.Command(ffmpegPath, args...)
 
 	// Capture stderr to get detailed ffmpeg error messages
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
+	resultBuffer := bytes.NewBuffer(make([]byte, 5<<20)) // pre allocate 5MiB buffer
+
+	cmd.Stderr = os.Stderr    // bind log stream to stderr
+	cmd.Stdout = resultBuffer // stdout result will be written here
 
 	// Log the start of the conversion
 	zaplog.Info("converting file", zap.String("id", id))
@@ -38,14 +40,7 @@ func Convert(id string) error {
 
 	// Wait for the ffmpeg command to finish
 	if err := cmd.Wait(); err != nil {
-		zaplog.Error("FFmpeg failed", zap.Error(err), zap.String("stderr", stderr.String()))
-		return err
-	}
-
-	// Read the converted file
-	result, err := os.ReadFile(outputPath)
-	if err != nil {
-		zaplog.Error("Failed to read file", zap.Error(err))
+		zaplog.Error("FFmpeg failed", zap.Error(err))
 		return err
 	}
 
@@ -53,8 +48,8 @@ func Convert(id string) error {
 	defer os.Remove(outputPath)
 
 	// Upload the converted file to S3 with retry logic
-	if _, err = retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.UploadToS3,
-		result, fmt.Sprintf("%s.mp3", id), s3.YTDLS3Bucket); err != nil {
+	if _, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.UploadToS3,
+		resultBuffer, fmt.Sprintf("%s.mp3", id), s3.YTDLS3Bucket); err != nil {
 		zaplog.Error("Failed to upload to S3", zap.Error(err))
 		return err
 	}
