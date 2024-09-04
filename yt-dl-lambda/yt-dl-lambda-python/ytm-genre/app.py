@@ -66,16 +66,14 @@ def lambda_handler(event, context):
             if z == dict(s):
                 z = list(z.keys())[0]
             print(z.title())
-            try:
-                sqs_client.send_message(
-                    QueueUrl="https://sqs." + os.environ.get('AWS_REGION') + ".amazonaws.com/" + os.environ.get('AWS_ACCOUNT_ID') + "/yt-dl-3-meta",
-                    MessageBody=json.dumps({
-                        "id": id,
-                        "genre": z.title()
-                    })
-                )
-            except boto3.ClientError as err:
-                raise
+            print("https://sqs." + os.environ.get('AWS_REGION') + ".amazonaws.com/" + os.environ.get('AWS_ACCOUNT_ID') + "/yt-dl-3-meta")
+            sqs_client.send_message(
+                QueueUrl="https://sqs." + os.environ.get('AWS_REGION') + ".amazonaws.com/" + os.environ.get('AWS_ACCOUNT_ID') + "/yt-dl-3-meta",
+                MessageBody=json.dumps({
+                    "id": id,
+                    "genre": z.title()
+                })
+            )
         except Exception as e:
             batch_item_failures.append({"itemIdentifier": record['messageId']})  
     sqs_batch_response["batchItemFailures"] = batch_item_failures
