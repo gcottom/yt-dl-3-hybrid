@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/gcottom/go-zaplog"
@@ -71,15 +72,15 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	filepath := fmt.Sprintf("%s/%s/%s", homeDir, tempDir, id)
-	file, err := os.Open(filepath)
+	path := fmt.Sprintf("%s/%s/%s", homeDir, tempDir, id)
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	var reqBody bytes.Buffer
-	writer := multipart.NewWriter(&reqBody)
-	part, err := writer.CreateFormFile("file", filepath)
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, err := writer.CreateFormFile("file", filepath.Base(path))
 	if err != nil {
 		return err
 	}
@@ -106,18 +107,22 @@ func (s *Service) ProcessDownload(ctx context.Context, id string) error {
 	if err := json.Unmarshal(resp, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	req, err = s.HTTPClient.CreateRequest(http.MethodPut, data.URL, reqBody.Bytes())
+	zaplog.Info("uploading file", zap.String("filepath", path), zap.String("id", id), zap.Int("size", len(reqBody.Bytes())))
+
+	client := &http.Client{}
+	req, err = http.NewRequest(http.MethodPut, data.URL, reqBody)
+
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	_, code, err = s.HTTPClient.DoRequest(req)
+	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
+		fmt.Println(err)
+		return err
 	}
-	if code != http.StatusOK {
-		return fmt.Errorf("failed to upload file: %d", code)
-	}
+	defer res.Body.Close()
 	req, err = s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/initiator?id=%s", s.Config.LambdaDomain, id), reqBody.Bytes())
 	if err != nil {
 		return err

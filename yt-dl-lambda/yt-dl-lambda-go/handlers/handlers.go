@@ -48,13 +48,15 @@ func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespons
 func Convert(sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		id := record.Body
-		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3Buf, id, s3.YTDLS3Bucket)
+		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3File, id, ".temp", s3.YTDLS3Bucket)
 		if err != nil {
 			return err
 		}
-		data := res[0].(*aws.WriteAtBuffer)
+		data := res[0].(*os.File)
+		defer data.Close()
+		defer os.Remove(data.Name())
 		dynamoClient := dynamodb.CreateDynamoClient(context.Background())
-		if err := converter.Convert(data.Bytes(), id); err != nil {
+		if err := converter.Convert(id); err != nil {
 			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}
