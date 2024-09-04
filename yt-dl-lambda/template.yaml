@@ -79,7 +79,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref DownloadsBucket
-      AccessControl: 'PublicRead'
     
   # SQS Resources
   YTDL3ConvertSQS:
