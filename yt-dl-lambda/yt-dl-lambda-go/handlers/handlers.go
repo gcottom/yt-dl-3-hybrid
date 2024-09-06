@@ -25,7 +25,7 @@ type InitiatorResponse struct {
 	State string `json:"state"`
 }
 
-func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func Initiate(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	id := req.QueryStringParameters["id"]
 	if err := sqs.SQSSendMessage(sqs.SQSConverterURL, id); err != nil {
 		return &events.APIGatewayProxyResponse{
@@ -47,7 +47,7 @@ func Initiate(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespons
 	}, nil
 }
 
-func Convert(sqsEvent events.SQSEvent) error {
+func Convert(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		id := record.Body
 		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3File, id, ".temp", s3.YTDLS3Bucket)
@@ -58,10 +58,10 @@ func Convert(sqsEvent events.SQSEvent) error {
 		data := res[0].(*os.File)
 		defer data.Close()
 		defer os.Remove(data.Name())
-		dynamoClient := dynamodb.CreateDynamoClient(context.Background())
+		dynamoClient := dynamodb.CreateDynamoClient(ctx)
 		if err := converter.Convert(id); err != nil {
 			zaplog.Error("Failed to convert file", zap.Error(err))
-			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed}); re != nil {
+			if re := dynamoClient.PutTrack(ctx, &dynamodb.DBTrack{ID: id, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}
 			return err
@@ -79,33 +79,37 @@ func Convert(sqsEvent events.SQSEvent) error {
 	return nil
 }
 
-func Meta(sqsEvent events.SQSEvent) error {
+func Meta(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, record := range sqsEvent.Records {
 		var recordData sqs.MetaQueueSQSMessage
 		if err := json.Unmarshal([]byte(record.Body), &recordData); err != nil {
+			zaplog.ErrorC(ctx, "Failed to unmarshal record", zap.Error(err))
 			return err
 		}
+		zaplog.InfoC(ctx, "Processing record", zap.Any("record", recordData))
 		httpClient := http_client.NewHTTPClient()
-		dynamoClient := dynamodb.CreateDynamoClient(context.Background())
+		dynamoClient := dynamodb.CreateDynamoClient(ctx)
 		metaService := &meta.Service{HTTPClient: httpClient, DBClient: dynamoClient,
 			SpotifyConfig: &clientcredentials.Config{ClientID: os.Getenv("SPOTIFY_CLIENT_ID"), ClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET")}}
 		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3Buf, fmt.Sprintf("%s.mp3", recordData.ID), s3.YTDLS3Bucket)
 		if err != nil {
+			zaplog.ErrorC(ctx, "Failed to download file", zap.Error(err))
 			return err
 		}
 		data := res[0].(*aws.WriteAtBuffer)
-		if err := metaService.SaveMeta(context.Background(), data.Bytes(), recordData.ID, recordData.Genre); err != nil {
-			if re := dynamoClient.PutTrack(context.Background(), &dynamodb.DBTrack{ID: recordData.ID, Status: dynamodb.StatusFailed}); re != nil {
+		if err := metaService.SaveMeta(ctx, data.Bytes(), recordData.ID, recordData.Genre); err != nil {
+			if re := dynamoClient.PutTrack(ctx, &dynamodb.DBTrack{ID: recordData.ID, Status: dynamodb.StatusFailed}); re != nil {
 				return re
 			}
+			zaplog.ErrorC(ctx, "Failed to save meta", zap.Error(err))
 			return err
 		}
 	}
 	return nil
 }
 
-func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	dynamoClient := dynamodb.CreateDynamoClient(context.Background())
+func Status(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	dynamoClient := dynamodb.CreateDynamoClient(ctx)
 	id, ok := req.QueryStringParameters["id"]
 	if !ok {
 		return &events.APIGatewayProxyResponse{
@@ -113,7 +117,7 @@ func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse,
 			Body:       "Missing id parameter",
 		}, nil
 	}
-	track, err := dynamoClient.GetTrackByID(context.Background(), id)
+	track, err := dynamoClient.GetTrackByID(ctx, id)
 	if err != nil {
 		var notFoundError *dynamodb.DBNotFoundError
 		if errors.As(err, &notFoundError) {
@@ -154,7 +158,7 @@ func Status(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse,
 	}, nil
 }
 
-func GetPresignedUploadURL(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func GetPresignedUploadURL(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	id, ok := req.QueryStringParameters["id"]
 	if !ok {
 		return &events.APIGatewayProxyResponse{
