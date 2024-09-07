@@ -13,11 +13,13 @@ type Service struct {
 }
 
 type TrackMeta struct {
-	Title       string
-	Artist      string
-	Album       string
-	Genre       string
-	CoverArtURL string
+	ID          string `dynamodbav:"id" json:"id"`
+	Status      string `dynamodbav:"status" json:"status,omitempty"`
+	URL         string `dynamodbav:"url" json:"url,omitempty"`
+	Title       string `dynamodbav:"title" json:"title"`
+	Artist      string `dynamodbav:"artist" json:"artist"`
+	Album       string `dynamodbav:"album" json:"album,omitempty"`
+	CoverArtURL string `dynamodbav:"cover_art_url" json:"cover_art_url,omitempty"`
 }
 
 type YTMMetaResponse struct {

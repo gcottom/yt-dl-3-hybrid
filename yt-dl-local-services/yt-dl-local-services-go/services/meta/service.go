@@ -121,18 +121,18 @@ func (s *Service) GetBestMetaMatch(ctx context.Context, trackMeta TrackMeta, spo
 		spotifyMetas, err := s.GetSpotifyMeta(ctx, TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist})
 		if err != nil {
 			zaplog.ErrorC(ctx, "failed to get spotify meta", zap.Error(err))
-			return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, Genre: trackMeta.Genre, CoverArtURL: trackMeta.CoverArtURL}
+			return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, CoverArtURL: trackMeta.CoverArtURL}
 		}
 		if coverArtist != "" {
 			caSpotifyMetas, err := s.GetSpotifyMeta(ctx, TrackMeta{Title: sanitizedTitle, Artist: coverArtist})
 			if err != nil {
 				zaplog.ErrorC(ctx, "failed to get spotify meta", zap.Error(err))
-				return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, Genre: trackMeta.Genre, CoverArtURL: trackMeta.CoverArtURL}
+				return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, CoverArtURL: trackMeta.CoverArtURL}
 			}
 			spotifyMetas = append(spotifyMetas, caSpotifyMetas...)
 		}
 		if len(spotifyMetas) == 0 {
-			return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, Genre: trackMeta.Genre, CoverArtURL: trackMeta.CoverArtURL}
+			return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, CoverArtURL: trackMeta.CoverArtURL}
 		}
 	}
 	sanitizedSplits := strings.Split(strings.ReplaceAll(sanitizedTitle, ":", "-"), "-")
@@ -177,7 +177,7 @@ func (s *Service) GetBestMetaMatch(ctx context.Context, trackMeta TrackMeta, spo
 			if s.EqualIgnoringWhitespace(coverArtist, spotifyMeta.Artist) {
 				for _, title := range titles {
 					if s.EqualIgnoringWhitespace(title, spotifyMeta.Title) {
-						return TrackMeta{Title: spotifyMeta.Title, Artist: spotifyMeta.Artist, Album: spotifyMeta.Album, Genre: trackMeta.Genre, CoverArtURL: spotifyMeta.CoverArtURL}
+						return TrackMeta{Title: spotifyMeta.Title, Artist: spotifyMeta.Artist, Album: spotifyMeta.Album, CoverArtURL: spotifyMeta.CoverArtURL}
 					}
 				}
 			}
@@ -186,14 +186,14 @@ func (s *Service) GetBestMetaMatch(ctx context.Context, trackMeta TrackMeta, spo
 			if s.EqualIgnoringWhitespace(title, spotifyMeta.Title) {
 				for _, artist := range artists {
 					if s.EqualIgnoringWhitespace(artist, spotifyMeta.Artist) {
-						return TrackMeta{Title: spotifyMeta.Title, Artist: spotifyMeta.Artist, Album: spotifyMeta.Album, Genre: trackMeta.Genre, CoverArtURL: spotifyMeta.CoverArtURL}
+						return TrackMeta{Title: spotifyMeta.Title, Artist: spotifyMeta.Artist, Album: spotifyMeta.Album, CoverArtURL: spotifyMeta.CoverArtURL}
 					}
 				}
 			}
 		}
 	}
 
-	return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: "", Genre: trackMeta.Genre, CoverArtURL: trackMeta.CoverArtURL}
+	return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: "", CoverArtURL: trackMeta.CoverArtURL}
 }
 
 func (s *Service) SanitizeString(str string) string {
