@@ -31,6 +31,7 @@ type DBTrack struct {
 	Artist      string `dynamodbav:"artist" json:"artist"`
 	Album       string `dynamodbav:"album" json:"album,omitempty"`
 	CoverArtURL string `dynamodbav:"cover_art_url" json:"cover_art_url,omitempty"`
+	FileName    string `dynamodbav:"file_name" json:"file_name,omitempty"`
 }
 
 type DynamoClient struct {

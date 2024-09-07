@@ -57,7 +57,7 @@ func (s *Service) SaveMeta(ctx context.Context, data []byte, id string, genre st
 		return err
 	}
 	if _, err = retry.Retry(retry.NewAlgSimpleDefault(), 3, s.DBClient.PutTrack, ctx,
-		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fileName, Title: track.Title, Artist: track.Artist, Album: track.Album}); err != nil {
+		&dynamodb.DBTrack{ID: id, Status: dynamodb.StatusComplete, URL: fileName, FileName: fileName, Title: track.Title, Artist: track.Artist, Album: track.Album}); err != nil {
 		zaplog.ErrorC(ctx, "failed to update dynamodb", zap.Error(err))
 		return err
 	}
