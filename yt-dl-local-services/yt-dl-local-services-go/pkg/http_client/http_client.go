@@ -23,7 +23,6 @@ func (h *HTTPClient) CreateRequest(method string, url string, body []byte) (*htt
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
 		return req, nil
 	}
 	req, err := http.NewRequest(method, url, nil)
@@ -31,7 +30,6 @@ func (h *HTTPClient) CreateRequest(method string, url string, body []byte) (*htt
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 	return req, nil
 }
 
@@ -41,7 +39,6 @@ func (h *HTTPClient) CreateOctetStreamRequest(method string, url string, body []
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("Accept", "application/json")
 	return req, nil
 }
 

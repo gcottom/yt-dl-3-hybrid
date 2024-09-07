@@ -326,3 +326,5 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref YTDL3TrackTable
+        - S3CrudPolicy:
+            BucketName: !Ref DownloadsBucket
