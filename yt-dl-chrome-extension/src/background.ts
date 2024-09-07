@@ -3,112 +3,102 @@ const goPort = 50999;
 //////////////////////
 // START HIGHLANDER //
 //////////////////////
-
-export const isGecko: boolean = chrome.runtime.getURL('').startsWith('moz-extension://');
-export const isSafari: boolean = chrome.runtime.getURL('').startsWith('safari-web-extension://');
-
-export function performsAsyncOperation(callback: () => any): Promise<any> {
-    return new Promise((resolve) => {
-        resolve(callback());
-    });
-}
-
-export function execRuntimeSendMessages(obj: any): Promise<any> {
-    return new Promise((resolve) => {
-        chrome.runtime.sendMessage(obj, (data) => {
-            if (chrome.runtime.lastError) {
-                console.error(chrome.runtime.lastError);
-            }
-            resolve(data);
-        });
-    });
-}
-
 const INTERNAL_TESTALIVE_PORT = "DNA_Internal_alive_test";
+
+//const startSeconds = 1;
 const nextSeconds = 25;
 const SECONDS = 1000;
 const DEBUG = false;
 
-let alivePort: chrome.runtime.Port | null = null;
-let isFirstStart = true;
-let isAlreadyAwake = false;
+var alivePort: chrome.runtime.Port | null = null;
+var isFirstStart = true;
+var isAlreadyAwake = false;
+//var timer = startSeconds*SECONDS;
+var timer: number;
+var firstCall: number;
+var lastCall: number;
 
-let timer: number;
-let firstCall: number;
-let lastCall: number;
-
-let wakeup: NodeJS.Timeout | undefined = undefined;
-let wCounter = 0;
+var wakeup: NodeJS.Timeout | undefined = undefined;
+var wsTest = undefined;
+var wCounter = 0;
 
 const starter = `-------- >>> ${convertNoDate(Date.now())} UTC - Service Worker with HIGHLANDER DNA is starting <<< --------`;
-//#endregion
 
-chrome.runtime.onInstalled.addListener((details) => {
-
-    async () => await initialize();
-
-    switch (details.reason) {
-        case "install":
-            console.log("This runs when the extension is newly installed.");
-            start();
-            break;
-
-        case "update":
-            console.log("This runs when an extension is updated.");
-            start();
-            break;
-
-        default:
-            break;
-    }
-});
-
-// SW is starting
 console.log(starter);
-start();
 
-// Clears the Highlander interval when the browser closes.
+// Start Highlander
+letsStart();
+
+// ----------------------------------------------------------------------------------------
+function letsStart() {
+    if (wakeup === undefined) {
+        isFirstStart = true;
+        isAlreadyAwake = true;
+        firstCall = Date.now();
+        lastCall = firstCall;
+        //timer = startSeconds*SECONDS;
+        timer = 300;
+
+        wakeup = setInterval(Highlander, timer);
+        console.log(`-------- >>> Highlander has been started at ${convertNoDate(firstCall)}`);
+    }
+}
+// ----------------------------------------------------------------------------------------
+
+chrome.runtime.onInstalled.addListener(
+    async () => await initialize()
+);
+
+chrome.tabs.onCreated.addListener(onCreatedTabListener);
+chrome.tabs.onUpdated.addListener(onUpdatedTabListener);
+chrome.tabs.onRemoved.addListener(onRemovedTabListener);
+
+// Clears the Highlander interval when browser closes.
+// This allows the process associated with the extension to be removed.
+// Normally the process associated with the extension once the host browser is closed 
+// will be removed after about 30 seconds at maximum (from Chromium 110 up, before was 5 minutes).
+// If the browser is reopened before the system has removed the (pending) process, 
+// Highlander will be restarted in the same process which will be not removed anymore.
 chrome.windows.onRemoved.addListener((windowId) => {
     wCounter--;
     if (wCounter > 0) {
         return;
     }
 
-    console.log("Browser is closing");
-
+    // Browser is closing: no more windows open. Clear Highlander interval (or leave it active forever).
+    // Shutting down Highlander will allow the system to remove the pending process associated with
+    // the extension in max. 30 seconds (from Chromium 110 up, before was 5 minutes).
     if (wakeup !== undefined) {
+        // If browser will be open before the process associated to this extension is removed, 
+        // setting this to false will allow a new call to letsStart() if needed 
+        // ( see windows.onCreated listener )
         isAlreadyAwake = false;
-        // Uncomment to shutdown Highlander
-        // clearInterval(wakeup);  // # shutdown Highlander
-        // wakeup = undefined;     // # shutdown Highlander
+
+        // if you don't need to maintain the service worker running after the browser has been closed,
+        // just uncomment the "# shutdown Highlander" rows below (already uncommented by default)
+        console.log("Shutting down Highlander"); // # shutdown Highlander
+        clearInterval(wakeup);                      // # shutdown Highlander
+        wakeup = undefined;                         // # shutdown Highlander   
     }
 });
 
 chrome.windows.onCreated.addListener(async (window) => {
-    console.log("Browser is creating a new window");
     let w = await chrome.windows.getAll();
     wCounter = w.length;
-    if (wCounter === 1) {
+    if (wCounter == 1) {
         updateJobs();
     }
 });
 
-// Tabs listeners
-chrome.tabs.onCreated.addListener(onCreatedTabListener);
-chrome.tabs.onUpdated.addListener(onUpdatedTabListener);
-chrome.tabs.onRemoved.addListener(onRemovedTabListener);
-
-// START
-async function start() {
-    console.log("Hello world");
-    startHighlander();
+async function updateJobs() {
+    if (isAlreadyAwake == false) {
+        letsStart();
+    }
 }
 
-async function updateJobs() {
-    console.log("In updateJobs() -> isAlreadyAwake=", isAlreadyAwake);
-    if (!isAlreadyAwake) {
-        startHighlander();
-    }
+async function checkTabs() {
+    let results = await chrome.tabs.query({});
+    results.forEach(onCreatedTabListener);
 }
 
 function onCreatedTabListener(tab: chrome.tabs.Tab): void {
@@ -123,40 +113,20 @@ function onRemovedTabListener(tabId: number): void {
     if (DEBUG) console.log("Removed TAB id=", tabId);
 }
 
-async function checkTabs() {
-    let results = await chrome.tabs.query({});
-    results.forEach(onCreatedTabListener);
-}
-
-async function initialize() {
-    await checkTabs();
-    updateJobs();
-}
-
-function startHighlander() {
-    if (wakeup === undefined) {
-        isFirstStart = true;
-        isAlreadyAwake = true;
-        firstCall = Date.now();
-        lastCall = firstCall;
-        timer = 300;
-
-        wakeup = setInterval(Highlander, timer);
-        console.log(`-------- >>> Highlander has been started at ${convertNoDate(firstCall)}`);
-    }
-}
-
-// HIGHLANDER FUNCTIONS
+// ---------------------------
+// HIGHLANDER
+// ---------------------------
 async function Highlander() {
+
     const now = Date.now();
     const age = now - firstCall;
     lastCall = now;
 
     const str = `HIGHLANDER ------< ROUND >------ Time elapsed from first start: ${convertNoDate(age)}`;
-    console.log(str);
+    console.log(str)
 
     if (alivePort == null) {
-        alivePort = chrome.runtime.connect({ name: INTERNAL_TESTALIVE_PORT });
+        alivePort = chrome.runtime.connect({ name: INTERNAL_TESTALIVE_PORT })
 
         alivePort.onDisconnect.addListener((p) => {
             if (chrome.runtime.lastError) {
@@ -170,12 +140,13 @@ async function Highlander() {
     }
 
     if (alivePort) {
+
         alivePort.postMessage({ content: "ping" });
 
         if (chrome.runtime.lastError) {
-            if (DEBUG) console.log(`(DEBUG Highlander): postMessage error: ${chrome.runtime.lastError.message}`);
+            if (DEBUG) console.log(`(DEBUG Highlander): postMessage error: ${chrome.runtime.lastError.message}`)
         } else {
-            if (DEBUG) console.log(`(DEBUG Highlander): "ping" sent through ${alivePort.name} port`);
+            if (DEBUG) console.log(`(DEBUG Highlander): "ping" sent through ${alivePort.name} port`)
         }
     }
 
@@ -185,18 +156,25 @@ async function Highlander() {
             nextRound();
         }, 100);
     }
+
 }
 
 function convertNoDate(long: number): string {
-    const dt = new Date(long).toISOString();
-    return dt.slice(-13, -5); // HH:MM:SS only
+    var dt = new Date(long).toISOString()
+    return dt.slice(-13, -5) // HH:MM:SS only
 }
 
 function nextRound() {
-    clearInterval(wakeup as NodeJS.Timeout);
+    clearInterval(wakeup);
     timer = nextSeconds * SECONDS;
     wakeup = setInterval(Highlander, timer);
 }
+
+async function initialize() {
+    await checkTabs();
+    updateJobs();
+}
+// ------------------------------------------------------------------------------------
 ////////////////////
 // END HIGHLANDER //
 ////////////////////

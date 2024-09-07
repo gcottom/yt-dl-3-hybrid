@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gcottom/go-zaplog"
 	"github.com/gcottom/qgin/qgin"
@@ -11,6 +12,7 @@ import (
 	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/handlers"
 	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/pkg/http_client"
 	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/services/downloader"
+	"github.com/gin-contrib/cors"
 )
 
 func main() {
@@ -45,6 +47,14 @@ func RunServer(cfg *config.Config) error {
 		LogRequestID:       false,
 		ProdMode:           true,
 	})
+	ginws.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	zaplog.InfoC(ctx, "setting up routes")
 	handlers.SetupRoutes(ginws, downloaderService)
