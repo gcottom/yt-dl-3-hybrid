@@ -215,6 +215,8 @@ Resources:
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt YTDL3ConvertSQS.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref YTDL3TrackTable
   YTDL3ConverterFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -274,44 +276,6 @@ Resources:
       Dockerfile: yt-dl-lambda-python/ytm-genre/ytm_genre_docker
       DockerContext: .
       DockerTag: yt-dl-3-genre-v1
-  YTDL3YTMetaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      MemorySize: 128
-      PackageType: Image
-      ImageConfig:
-        Command: ["app.lambda_handler"]
-      Timeout: 30
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /meta
-            Method: GET
-            RestApiId: !Ref YTDL3API
-    Metadata:
-      Dockerfile: yt-dl-lambda-python/ytm-meta/ytm_meta_docker
-      DockerContext: .
-      DockerTag: yt-dl-3-meta-v1
-  YTDL3PlaylistFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      MemorySize: 128
-      PackageType: Image
-      ImageConfig:
-        Command: ["app.lambda_handler"]
-      Timeout: 30
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /playlist
-            Method: GET
-            RestApiId: !Ref YTDL3API
-    Metadata:
-      Dockerfile: yt-dl-lambda-python/ytm-playlist-track-list/ytm_playlist_track_list_docker
-      DockerContext: .
-      DockerTag: yt-dl-3-playlist-v1
   YTDL3MetaFunction:
     Type: AWS::Serverless::Function
     Metadata:

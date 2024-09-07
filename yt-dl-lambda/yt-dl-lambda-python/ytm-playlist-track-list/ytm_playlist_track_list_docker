@@ -1,7 +1,0 @@
-FROM public.ecr.aws/lambda/python:3.11
-
-COPY ./yt-dl-lambda-python/ytm-playlist-track-list/app.py ./yt-dl-lambda-python/ytm-playlist-track-list/requirements.txt ./
-
-RUN python3.11 -m pip install -r requirements.txt
-
-CMD ["app.lambda_handler"]

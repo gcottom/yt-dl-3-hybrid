@@ -17,6 +17,15 @@ func NewHTTPClient() *HTTPClient {
 }
 
 func (h *HTTPClient) CreateRequest(method string, url string, body []byte) (*http.Request, error) {
+	if body != nil {
+		req, err := http.NewRequest(method, url, bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		return req, nil
+	}
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
