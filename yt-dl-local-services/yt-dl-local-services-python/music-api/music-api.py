@@ -13,12 +13,29 @@ ytmusic = YTMusic()
 
 shutdown_flag = threading.Event()
 
+def load_config(config_path):
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise RuntimeError(f"Error parsing YAML configuration: {e}")
+
+    if 'local_port_python_services' not in config:
+        raise KeyError("Missing required configuration key: 'local_port_python_services'")
+
+    return config
+
+# Load the configuration
 config_path = os.path.join(os.path.dirname(__file__), './settings.yaml')
-with open(config_path, 'r') as f:
-    config = yaml.safe_load(f)
-
-
-PORT = config['local_port_python_services']
+try:
+    config = load_config(config_path)
+    PORT = config['local_port_python_services']
+except (FileNotFoundError, RuntimeError, KeyError) as e:
+    print(f"Configuration error: {e}")
+    exit(1)  # Exit the program with an error code
 
 class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):

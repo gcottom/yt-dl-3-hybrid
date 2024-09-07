@@ -34,7 +34,7 @@ func (s *Service) GetBestMeta(ctx context.Context, id string) (*TrackMeta, error
 }
 
 func (s *Service) GetYTMetaFromID(ctx context.Context, id string) (TrackMeta, error) {
-	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://localhost:50998/meta?id=%s", id), nil)
+	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("http://python_services_music_api:%d/meta?id=%s", s.Config.LocalPortPython, id), nil)
 	if err != nil {
 		zaplog.ErrorC(ctx, "failed to create meta request", zap.Error(err))
 		return TrackMeta{}, err

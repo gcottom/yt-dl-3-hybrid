@@ -80,7 +80,7 @@ func (s *Client) GetPlaylistEntries(ctx context.Context, playlistID string) ([]s
 
 func (s *Client) GetPlaylistEntriesFromMusicAPI(ctx context.Context, playlistID string) ([]string, error) {
 	zaplog.InfoC(ctx, "getting playlist entries from music API", zap.String("playlistID", playlistID))
-	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/playlist?id=%s", s.Config.LocalPortPython, playlistID), nil)
+	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("http://python_services_music_api:%d/playlist?id=%s", s.Config.LocalPortPython, playlistID), nil)
 	if err != nil {
 		zaplog.ErrorC(ctx, "failed to create request", zap.Error(err))
 		return nil, fmt.Errorf("failed to create request: %w", err)

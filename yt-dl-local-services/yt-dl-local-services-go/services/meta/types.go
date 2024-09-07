@@ -1,11 +1,13 @@
 package meta
 
 import (
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/config"
 	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/pkg/http_client"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Service struct {
+	Config        *config.Config
 	HTTPClient    *http_client.HTTPClient
 	SpotifyConfig *clientcredentials.Config
 }
