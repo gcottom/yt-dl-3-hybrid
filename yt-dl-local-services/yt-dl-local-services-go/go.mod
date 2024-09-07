@@ -1,4 +1,4 @@
-module github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service
+module github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go
 
 go 1.22.3
 
@@ -9,7 +9,9 @@ require (
 	github.com/gcottom/semaphore v0.0.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/kkdai/youtube/v2 v2.10.1
+	github.com/zmb3/spotify/v2 v2.4.2
 	go.uber.org/zap v1.27.0
+	golang.org/x/oauth2 v0.23.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -28,7 +30,6 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

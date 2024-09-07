@@ -7,10 +7,10 @@ import (
 
 	"github.com/gcottom/go-zaplog"
 	"github.com/gcottom/qgin/qgin"
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/config"
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/handlers"
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/pkg/http_client"
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/services/downloader"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/config"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/handlers"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/pkg/http_client"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/services/downloader"
 )
 
 func main() {

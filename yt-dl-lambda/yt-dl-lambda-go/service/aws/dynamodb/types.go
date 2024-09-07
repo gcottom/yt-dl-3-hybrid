@@ -24,9 +24,13 @@ type DBNotFoundError struct {
 }
 
 type DBTrack struct {
-	ID     string `dynamodbav:"id"`
-	Status string `dynamodbav:"status"`
-	URL    string `dynamodbav:"url"`
+	ID          string `dynamodbav:"id"`
+	Status      string `dynamodbav:"status"`
+	URL         string `dynamodbav:"url"`
+	Title       string `dynamodbav:"title"`
+	Artist      string `dynamodbav:"artist"`
+	Album       string `dynamodbav:"album"`
+	CoverArtURL string `dynamodbav:"cover_art_url"`
 }
 
 type DynamoClient struct {

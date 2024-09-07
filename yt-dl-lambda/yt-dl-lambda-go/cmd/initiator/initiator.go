@@ -17,7 +17,7 @@ func main() {
 func handler(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	ctx = zaplog.CreateAndInject(ctx)
 	switch req.HTTPMethod {
-	case http.MethodGet:
+	case http.MethodPost:
 		return handlers.Initiate(ctx, req)
 	default:
 		return handlers.UnhandledMethod()

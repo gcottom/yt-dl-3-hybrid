@@ -1,4 +1,0 @@
-lambda_domain: your.custom.domain.com # The domain name you've configured in AWS for your API
-local_port: 50999 # Port to run the local services on
-concurrent_downloads: 5 # Number of concurrent downloads and uploads, note: download and uploads are counted separately so you can be downloading 5 songs and uploading 5 songs at the same time
-save_dir: /users/yourname/downloads # C:\Users\yourname\Downloads on Windows, don't include a trailing slash

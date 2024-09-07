@@ -1,0 +1,8 @@
+lambda_domain: your.custom.domain.com # The domain name you've configured in AWS for your API
+local_port_go_services: 50999 # Port to run the local go services on
+local_port_python_services: 50998 # Port to run the local python services on
+concurrent_downloads: 5 # Number of concurrent downloads and uploads, note: download and uploads are counted separately so you can be downloading 5 songs and uploading 5 songs at the same time
+save_dir: ./data # If using Docker, don't change this. If running via script, you can change to your desired directory
+temp_dir: ./temp # If using Docker, don't change this. If running via script, you can change to your desired directory
+spotify_client_id: your_spotify_client_id # Your Spotify client ID, acquired from the Spotify Developer Dashboard
+spotify_client_secret: your_spotify_client_secret # Your Spotify client secret, acquired from the Spotify Developer Dashboard

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/services/downloader"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/services/downloader"
 	"github.com/gin-gonic/gin"
 )
 

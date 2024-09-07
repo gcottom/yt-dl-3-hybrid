@@ -1,0 +1,19 @@
+services:
+  go_services_local_server:
+    build:
+      context: ./yt-dl-local-services/yt-dl-local-services-go
+      dockerfile: Dockerfile
+    ports:
+      - "50999:50999"
+    volumes: 
+      - ./data:/app/data
+      - ./temp:/app/temp
+      - ./settings.yaml:/app/config/config.yaml
+  python_services_music_api:
+    build:
+      context: ./yt-dl-local-services/yt-dl-local-services-python/music-api
+      dockerfile: Dockerfile
+    ports:
+      - "50998:50998"
+    volumes:
+      - ./settings.yaml:/app/settings.yaml

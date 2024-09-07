@@ -3,8 +3,8 @@ package youtube_v2
 import (
 	"context"
 
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/config"
-	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-service/pkg/http_client"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/config"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/pkg/http_client"
 	"github.com/kkdai/youtube/v2"
 )
 

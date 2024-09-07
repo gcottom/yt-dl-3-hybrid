@@ -210,7 +210,7 @@ Resources:
           Type: Api
           Properties:
             Path: /initiator
-            Method: GET
+            Method: POST
             RestApiId: !Ref YTDL3API
       Policies:
         - SQSSendMessagePolicy:

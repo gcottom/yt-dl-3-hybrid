@@ -17,6 +17,7 @@ import (
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/aws/sqs"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/converter"
 	"github.com/gcottom/yt-dl-3-hybrid/yt-dl-lambda/yt-dl-lambda-go/service/meta"
+	spotifyauth "github.com/zmb3/spotify/v2/auth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -26,11 +27,25 @@ type InitiatorResponse struct {
 }
 
 func Initiate(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	id := req.QueryStringParameters["id"]
-	if err := sqs.SQSSendMessage(sqs.SQSConverterURL, id); err != nil {
+	var track dynamodb.DBTrack
+	if err := json.Unmarshal([]byte(req.Body), &track); err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Failed to unmarshal request: %v", err),
+		}, nil
+	}
+	if err := sqs.SQSSendMessage(sqs.SQSConverterURL, track.ID); err != nil {
 		return &events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       fmt.Sprintf("Failed to send message: %v", err),
+		}, nil
+	}
+	track.Status = dynamodb.StatusProcessing
+	dynamoClient := dynamodb.CreateDynamoClient(ctx)
+	if err := dynamoClient.PutTrack(ctx, &track); err != nil {
+		return &events.APIGatewayProxyResponse{
+			StatusCode: 500,
+			Body:       fmt.Sprintf("Failed to put track: %v", err),
 		}, nil
 	}
 	response := InitiatorResponse{State: "ACK"}
@@ -90,7 +105,7 @@ func Meta(ctx context.Context, sqsEvent events.SQSEvent) error {
 		httpClient := http_client.NewHTTPClient()
 		dynamoClient := dynamodb.CreateDynamoClient(ctx)
 		metaService := &meta.Service{HTTPClient: httpClient, DBClient: dynamoClient,
-			SpotifyConfig: &clientcredentials.Config{ClientID: os.Getenv("SPOTIFY_CLIENT_ID"), ClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET")}}
+			SpotifyConfig: &clientcredentials.Config{ClientID: os.Getenv("SPOTIFY_CLIENT_ID"), ClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET"), TokenURL: spotifyauth.TokenURL}}
 		res, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s3.DownloadFromS3Buf, fmt.Sprintf("%s.mp3", recordData.ID), s3.YTDLS3Bucket)
 		if err != nil {
 			zaplog.ErrorC(ctx, "Failed to download file", zap.Error(err))
