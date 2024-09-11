@@ -286,8 +286,8 @@ Resources:
       Runtime: provided.al2023
       Architectures:
         - x86_64
-      MemorySize: 256
-      Timeout: 30
+      MemorySize: 512
+      Timeout: 300
       Events:
         SQSMessagePublished:
           Type: SQS
@@ -296,7 +296,7 @@ Resources:
             BatchSize: 10
             MaximumBatchingWindowInSeconds: 2
             ScalingConfig:
-              MaximumConcurrency: 25
+              MaximumConcurrency: 100
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt YTDL3MetaSQS.QueueName
