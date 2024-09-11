@@ -95,7 +95,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: yt-dl-3-meta
-      VisibilityTimeout: 120
+      VisibilityTimeout: 320
 
   # DynamoDB Resources
   YTDL3TrackTable:
