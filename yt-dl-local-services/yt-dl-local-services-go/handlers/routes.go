@@ -9,4 +9,5 @@ func SetupRoutes(router *gin.Engine, downloaderService downloader.DownloaderServ
 	handler := &Handler{DownloaderService: downloaderService}
 	router.GET("/download", handler.StartDownload)
 	router.GET("/status", handler.GetStatus)
+	router.GET("/acknowledge", handler.AcknowledgeWarning)
 }

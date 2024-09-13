@@ -43,6 +43,8 @@ func (s *Service) DLQueueProcessor() {
 			} else {
 				go s.PlaylistProcessingCallback(context.Background(), id)
 			}
+		default:
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -59,7 +61,8 @@ func (s *Service) StatusProcessor() {
 			if status.Status == StatusComplete || status.Status == StatusFailed {
 				zaplog.InfoC(context.Background(), "final status for download", zap.String("id", status.ID), zap.String("status", status.Status))
 			}
-
+		default:
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -180,6 +183,32 @@ func (s *Service) ScheduledProcessingCallback(ctx context.Context, id string) {
 func (s *Service) PlaylistProcessingCallback(ctx context.Context, id string) {
 	s.StatusQueue <- StatusUpdate{ID: id, Status: StatusQueued}
 	entries, err := s.YoutubeClient.GetPlaylistEntries(ctx, id)
+	if len(entries) > 10 {
+		s.StatusQueue <- StatusUpdate{ID: id, Status: StatusWarning, Warning: fmt.Sprintf("Playlist length is %d, downloading this many tracks may result in a ban. Are you sure you want to continue?", len(entries))}
+		timeStart := time.Now()
+		for {
+			if time.Since(timeStart) > 10*time.Minute {
+				s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed, Warning: "warning not acknowledged, abandoning download"}
+				return
+			}
+			wg := sync.WaitGroup{}
+			var status StatusUpdate
+			wg.Add(1)
+			s.StatusQueue <- StatusUpdate{ID: id, ShouldCallback: true, Callback: func(stat StatusUpdate) {
+				status = stat
+				wg.Done()
+			}}
+			wg.Wait()
+			if status.Status == StatusFailed {
+				return
+			} else if status.Status == StatusWarningAck {
+				break
+			}
+
+			time.Sleep(10 * time.Second)
+
+		}
+	}
 	if err != nil {
 		zaplog.ErrorC(ctx, "failed to get playlist entries", zap.String("id", id), zap.Error(err))
 		return
@@ -214,10 +243,18 @@ func (s *Service) PlaylistProcessingCallback(ctx context.Context, id string) {
 }
 
 func (s *Service) GetStatus(ctx context.Context, id string) (*StatusUpdate, error) {
-	if status, ok := s.StatusMap[id]; ok {
-		return &status, nil
+	var data StatusUpdate
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	s.StatusQueue <- StatusUpdate{ID: id, ShouldCallback: true, Callback: func(stat StatusUpdate) {
+		data = stat
+		wg.Done()
+	}}
+	wg.Wait()
+	if data.ID == "" {
+		return &StatusUpdate{ID: id, Status: StatusQueued}, nil
 	}
-	return nil, nil
+	return &data, nil
 }
 
 func (s *Service) GetProcessingStatus(ctx context.Context, id string) (*ProcessingStatus, error) {
@@ -237,6 +274,11 @@ func (s *Service) GetProcessingStatus(ctx context.Context, id string) (*Processi
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 	return &status, nil
+}
+
+func (s *Service) AcknowledgeWarning(ctx context.Context, id string) error {
+	s.StatusQueue <- StatusUpdate{ID: id, Status: StatusWarningAck}
+	return nil
 }
 
 func (s *Service) SaveProcessedFile(ctx context.Context, name string, url string) error {

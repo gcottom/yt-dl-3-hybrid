@@ -188,6 +188,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
     } else if (message.rules) {
         initRules()
+    } else if (message.acknowledge) {
+        acknowledgeWarningRequest(message.acknowledge).then(() => {
+            pollDownloadStatus(message.acknowledge)
+        })
     }
 });
 
@@ -239,23 +243,8 @@ async function getTrack(link: string, fn?: string) {
     downloadTrack(link).then(() => {
         var ytlink = sanitizeUrl(link)
         console.log("polling download status");
-        pollStatus(ytlink).then(() => {
-            getStatus(ytlink).then((gcr) => {
-                console.log("got download status")
-                console.log(gcr)
-                if (gcr.status === "complete") {
-                    updatePopup(ytlink)
-                    closemessage(ytlink)
-                } else {
-                    sendErrorMessage(ytlink)
-                }
-            });
-
-        }).catch(() => {
-            console.log("caught error in dl poll")
-            sendErrorMessage(ytlink)
-        })
-    });
+        pollDownloadStatus(ytlink)
+    })
 }
 
 async function closemessage(id: string) {
@@ -290,7 +279,37 @@ async function sendErrorMessage(id: string) {
     }
 }
 
-function updatePopup(id: string) {
+async function sendWarningMessage(id: string, warning: string) {
+    try {
+        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        const activeTab = tabs[0]; // Access the first tab directly
+
+        if (activeTab?.id) {
+            chrome.tabs.sendMessage(activeTab.id, { warning: warning, id: id });
+            // Handle the response here
+        } else {
+            console.error("No active tabs found");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+async function acknowledgeWarningRequest(id: string): Promise<GetTrackResponse> {
+    try {
+        const response = await fetch(`http://localhost:${goPort}/acknowledge?id=${id}`, {
+            mode: "cors"
+        });
+        if (!response.ok) {
+            throw new Error('Failed to acknowledge warning');
+        }
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+}
+
+function updatePopup(id: string, state: string) {
     getFromDB(function (db) {
         var n = db.get(id)
         if (n != null && n != undefined) {
@@ -301,34 +320,45 @@ function updatePopup(id: string) {
     })
 }
 
-async function pollStatus(ytlink: string, st?: number): Promise<boolean> {
+async function pollDownloadStatus(id: string, st?: number): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         const startTime = st === undefined ? new Date().getTime() : st;
-        const w = st === undefined ? 7500 : 5000;
+        const pollInterval = st === undefined ? 5000 : 4000; // 4 seconds interval for polling
 
-        setTimeout(async () => {
-            if (new Date().getTime() > startTime + 120000) {
-                reject(false); // Timeout reached, track not converted
-            } else {
-                try {
-                    const gic = await getStatus(ytlink);
-                    if (gic.status === "complete") {
-                        resolve(true); // Track is converted
-                    } else if (gic.status === "faield") {
-                        reject(false); // Error occurred
+        // Create an interval for polling
+        const poller = setInterval(async () => {
+            const currentTime = new Date().getTime();
 
-                    } else {
-                        const result = await pollStatus(ytlink, startTime);
-                        resolve(result); // Recursively check until conversion or timeout
-                    }
-                } catch (error) {
-                    const result = await pollStatus(ytlink, startTime);
-                    reject(result); // Recursively check in case of errors
-                }
+            // Check if the timeout has been reached
+            if (currentTime > startTime + 1200000) { // 15 minutes timeout
+                clearInterval(poller); // Clear the interval on timeout
+                resolve(false); // Timeout reached, track not converted
+                return;
             }
-        }, w);
+
+            try {
+                const gic = await getStatus(id);
+                if (gic.status === "complete") {
+                    updatePopup(id, "dl_done")
+                    closemessage(id)
+                    clearInterval(poller); // Clear the interval on completion
+                    resolve(true); // Track is converted
+                } else if (gic.status === "failed") {
+                    updatePopup(id, "dl_error")
+                    sendErrorMessage(id)
+                    clearInterval(poller); // Clear the interval on error
+                    resolve(false); // Error occurred
+                } else if (gic.status === "warning") {
+                    sendWarningMessage(id, gic.warning)
+                    resolve(false)
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, pollInterval);
     });
 }
+
 
 async function getStatus(ytlink: string): Promise<DLStatusTrack> {
     try {
@@ -346,6 +376,7 @@ async function getStatus(ytlink: string): Promise<DLStatusTrack> {
             status: "",
             playlist_track_count: 0,
             playlist_track_done: 0,
+            warning: ""
         };
     }
 }

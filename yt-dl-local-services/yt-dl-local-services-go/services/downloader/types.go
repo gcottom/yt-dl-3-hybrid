@@ -15,6 +15,7 @@ import (
 type DownloaderService interface {
 	InitiateDownload(ctx context.Context, id string) error
 	GetStatus(ctx context.Context, id string) (*StatusUpdate, error)
+	AcknowledgeWarning(ctx context.Context, id string) error
 }
 
 type Service struct {
@@ -58,6 +59,7 @@ type StatusUpdate struct {
 	PlaylistTrackDone  int                `json:"playlist_track_done,omitempty"`
 	ShouldCallback     bool               `json:"should_callback,omitempty"`
 	Callback           func(StatusUpdate) `json:"-"`
+	Warning            string             `json:"warning,omitempty"`
 }
 
 type ProcessingStatus struct {
@@ -73,4 +75,6 @@ const (
 	StatusProcessing  = "processing"
 	StatusComplete    = "complete"
 	StatusFailed      = "failed"
+	StatusWarning     = "warning"
+	StatusWarningAck  = "warning_ack"
 )

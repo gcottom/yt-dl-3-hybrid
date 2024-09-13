@@ -52,3 +52,15 @@ func (h *Handler) GetStatus(ctx *gin.Context) {
 	zaplog.InfoC(ctx, "get status request successful", zap.String("id", id))
 	ResponseSuccess(ctx, *status)
 }
+
+func (h *Handler) AcknowledgeWarning(ctx *gin.Context) {
+	id := ctx.Query("id")
+	if id == "" {
+		zaplog.WarnC(ctx, "acknowledge warning request without ID present: ID is required")
+		ResponseFailure(ctx, errors.New("acknowledge warning request without ID present: ID is required"))
+		return
+	}
+	zaplog.InfoC(ctx, "acknowledge warning request received", zap.String("id", id))
+	h.DownloaderService.AcknowledgeWarning(ctx, id)
+	ResponseSuccess(ctx, StartDownloadResponse{State: "ACK"})
+}

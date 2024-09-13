@@ -6,7 +6,8 @@ interface DLStatusTrack {
     id: string,
     status: string,
     playlist_track_count: number,
-    playlist_track_done: number
+    playlist_track_done: number,
+    warning: string
 }
 
 interface DLDetailsTrack {
@@ -58,6 +59,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         startloader("success", "Download Completed Successfully! ID: " + message.id)
     } else if (message.error && message.id) {
         startloader("error", "Download Error Occurred! ID: " + message.id)
+    } else if (message.warning && message.id) {
+        triggerWarning("Warning: " + message.warning + " ID: " + message.id, message.id)
     }
 });
 
@@ -836,6 +839,31 @@ function stoploader() {
     if (ld) {
         document.getElementById("layout")?.removeChild(ld);
     }
+}
+
+async function acknowledgeWarning(id: string) {
+    chrome.runtime.sendMessage({ acknowledge: id })
+}
+
+function triggerWarning(msg: string, id: string) {
+    const warningdiv = document.createElement("div");
+    warningdiv.id = "ytmdl-warning-div";
+    warningdiv.setAttribute("data-component", "dismissible-item");
+    warningdiv.setAttribute("data-type", "warning");
+    warningdiv.setAttribute("data-value", msg + `<button id="acknowledge-button">Acknowledge</button>`);
+    document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+        if (target && target.id === 'acknowledge-button') {
+            warningdiv.remove(); // Remove the warning div when the button is clicked
+            acknowledgeWarning(id);
+        }
+    });
+    const layout = document.getElementById("layout");
+    if (layout) {
+        layout.insertBefore(warningdiv, layout.firstChild);
+        dismissiblefunc();
+    }
+
 }
 
 function dismissiblefunc() {
