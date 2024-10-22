@@ -60,6 +60,8 @@ type StatusUpdate struct {
 	ShouldCallback     bool               `json:"should_callback,omitempty"`
 	Callback           func(StatusUpdate) `json:"-"`
 	Warning            string             `json:"warning,omitempty"`
+	TrackArtist        string             `json:"track_artist,omitempty"`
+	TrackTitle         string             `json:"track_title,omitempty"`
 }
 
 type ProcessingStatus struct {

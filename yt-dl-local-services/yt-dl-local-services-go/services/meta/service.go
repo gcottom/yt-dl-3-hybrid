@@ -193,7 +193,7 @@ func (s *Service) GetBestMetaMatch(ctx context.Context, trackMeta TrackMeta, spo
 		}
 	}
 
-	return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: "", CoverArtURL: trackMeta.CoverArtURL}
+	return TrackMeta{Title: sanitizedTitle, Artist: trackMeta.Artist, Album: sanitizedTitle, CoverArtURL: trackMeta.CoverArtURL}
 }
 
 func (s *Service) SanitizeString(str string) string {

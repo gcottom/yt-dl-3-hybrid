@@ -7,7 +7,9 @@ interface DLStatusTrack {
     status: string,
     playlist_track_count: number,
     playlist_track_done: number,
-    warning: string
+    warning: string,
+    track_artist: string,
+    track_title: string
 }
 
 interface DLDetailsTrack {
@@ -56,7 +58,11 @@ function checkLinks() {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.complete && message.id) {
-        startloader("success", "Download Completed Successfully! ID: " + message.id)
+        if (message.artist && message.title) {
+            startloader("success", "Download Completed Successfully! " + message.artist + " - " + message.title + ", ID: " + message.id)
+        } else {
+            startloader("success", "Download Completed Successfully! ID: " + message.id)
+        }
     } else if (message.error && message.id) {
         startloader("error", "Download Error Occurred! ID: " + message.id)
     } else if (message.warning && message.id) {

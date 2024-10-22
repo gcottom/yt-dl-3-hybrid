@@ -247,13 +247,13 @@ async function getTrack(link: string, fn?: string) {
     })
 }
 
-async function closemessage(id: string) {
+async function closemessage(id: string, artist: string, title: string) {
     try {
         const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
         const activeTab = tabs[0]; // Access the first tab directly
 
         if (activeTab?.id) {
-            chrome.tabs.sendMessage(activeTab.id, { complete: true, id: id });
+            chrome.tabs.sendMessage(activeTab.id, { complete: true, id: id, artist: artist, title: title });
             // Handle the response here
         } else {
             console.error("No active tabs found");
@@ -340,7 +340,7 @@ async function pollDownloadStatus(id: string, st?: number): Promise<boolean> {
                 const gic = await getStatus(id);
                 if (gic.status === "complete") {
                     updatePopup(id, "dl_done")
-                    closemessage(id)
+                    closemessage(id, gic.track_artist, gic.track_title)
                     clearInterval(poller); // Clear the interval on completion
                     resolve(true); // Track is converted
                 } else if (gic.status === "failed") {
@@ -376,7 +376,9 @@ async function getStatus(ytlink: string): Promise<DLStatusTrack> {
             status: "",
             playlist_track_count: 0,
             playlist_track_done: 0,
-            warning: ""
+            warning: "",
+            track_artist: "",
+            track_title: ""
         };
     }
 }

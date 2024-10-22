@@ -12,6 +12,7 @@ import (
 
 	"github.com/gcottom/go-zaplog"
 	"github.com/gcottom/retry"
+	"github.com/gcottom/yt-dl-3-hybrid/yd-dl-local-services/yt-dl-local-services-go/services/meta"
 	"go.uber.org/zap"
 )
 
@@ -34,11 +35,21 @@ func (s *Service) DLQueueProcessor() {
 						s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
 						return
 					}
-					if _, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s.ProcessDownload, context.Background(), id); err != nil {
+					metaIn, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s.ProcessDownload, context.Background(), id)
+					if err != nil {
 						s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
 						return
 					}
-					go s.ScheduledProcessingCallback(context.Background(), id)
+					if len(metaIn) == 0 {
+						s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
+						return
+					}
+					meta, ok := metaIn[0].(*meta.TrackMeta)
+					if !ok {
+						s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
+						return
+					}
+					go s.ScheduledProcessingCallback(context.Background(), meta)
 				}(id)
 			} else {
 				go s.PlaylistProcessingCallback(context.Background(), id)
@@ -59,7 +70,7 @@ func (s *Service) StatusProcessor() {
 			}
 			s.StatusMap[status.ID] = status
 			if status.Status == StatusComplete || status.Status == StatusFailed {
-				zaplog.InfoC(context.Background(), "final status for download", zap.String("id", status.ID), zap.String("status", status.Status))
+				zaplog.Info("final status for download", zap.String("id", status.ID), zap.String("status", status.Status))
 			}
 		default:
 			time.Sleep(1 * time.Second)
@@ -75,87 +86,88 @@ func (s *Service) RunDownload(ctx context.Context, id string) error {
 	return exec.Command("./downloader", fmt.Sprintf("-id=%s", id)).Run()
 }
 
-func (s *Service) ProcessDownload(ctx context.Context, id string) error {
+func (s *Service) ProcessDownload(ctx context.Context, id string) (*meta.TrackMeta, error) {
 	path := fmt.Sprintf("%s/%s", s.Config.TempDir, id)
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer os.Remove(path)
 	defer file.Close()
 	reqBody, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err := s.HTTPClient.CreateRequest(http.MethodGet, fmt.Sprintf("https://%s/s3signer?id=%s", s.Config.LambdaDomain, id), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, code, err := s.HTTPClient.DoRequest(req)
 	if err != nil {
-		return fmt.Errorf("failed to get signed URL: %w", err)
+		return nil, fmt.Errorf("failed to get signed URL: %w", err)
 	}
 	if code != http.StatusOK {
-		return fmt.Errorf("failed to get signed URL: %d", code)
+		return nil, fmt.Errorf("failed to get signed URL: response code %d", code)
 	}
 	var data struct {
 		URL string `json:"url"`
 	}
 	if err := json.Unmarshal(resp, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 	zaplog.Info("uploading file", zap.String("filepath", path), zap.String("id", id))
 	req, err = s.HTTPClient.CreateOctetStreamRequest(http.MethodPut, data.URL, reqBody)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		zaplog.ErrorC(ctx, "failed to create request", zap.Error(err))
+		return nil, err
 	}
 	_, code, err = s.HTTPClient.DoRequest(req)
 	if err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
+		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 	if code != http.StatusOK {
-		return fmt.Errorf("failed to upload file: %d", code)
+		return nil, fmt.Errorf("failed to upload file: %d", code)
 	}
 	trackMeta, err := s.MetaServiceClient.GetBestMeta(ctx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	trackMeta.ID = id
 	jsonData, err := json.Marshal(trackMeta)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err = s.HTTPClient.CreateRequest(http.MethodPost, fmt.Sprintf("https://%s/initiator", s.Config.LambdaDomain), jsonData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	res, code, err := s.HTTPClient.DoRequest(req)
 	if err != nil {
 		zaplog.Error("failed to initiate processing", zap.Error(err))
-		return fmt.Errorf("failed to initiate processing: %w", err)
+		return nil, fmt.Errorf("failed to initiate processing: %w", err)
 	}
 	if code != http.StatusOK {
 		zaplog.Error("failed to initiate processing", zap.Int("code", code), zap.String("response", string(res)))
-		return fmt.Errorf("failed to initiate processing: %d", code)
+		return nil, fmt.Errorf("failed to initiate processing: %d", code)
 	}
-	return nil
+	return trackMeta, nil
 }
 
-func (s *Service) ScheduledProcessingCallback(ctx context.Context, id string) {
+func (s *Service) ScheduledProcessingCallback(ctx context.Context, meta *meta.TrackMeta) {
 	start := time.Now()
+	id := meta.ID
 	for {
 		s.StatusQueue <- StatusUpdate{ID: id, Status: StatusProcessing}
 		if time.Since(start) > 3600*time.Second {
 			zaplog.ErrorC(ctx, "processing timed out", zap.String("id", id))
-			s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
+			s.StatusQueue <- StatusUpdate{ID: id, TrackArtist: meta.Artist, TrackTitle: meta.Title, Status: StatusFailed}
 			return
 		}
 		zaplog.InfoC(ctx, "processing callback running - getting processing status", zap.String("id", id))
 		status, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s.GetProcessingStatus, ctx, id)
 		if err != nil {
 			zaplog.ErrorC(ctx, "failed to get status", zap.String("id", id), zap.Error(err))
-			s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
+			s.StatusQueue <- StatusUpdate{ID: id, TrackArtist: meta.Artist, TrackTitle: meta.Title, Status: StatusFailed}
 			return
 		}
 		if status[0] != nil && status[0].(*ProcessingStatus).Status == StatusComplete {
@@ -164,13 +176,13 @@ func (s *Service) ScheduledProcessingCallback(ctx context.Context, id string) {
 			defer s.SaveFileLimiter.Release()
 			if _, err := retry.Retry(retry.NewAlgSimpleDefault(), 3, s.SaveProcessedFile, ctx, status[0].(*ProcessingStatus).FileName, status[0].(*ProcessingStatus).FileURL); err != nil {
 				zaplog.ErrorC(ctx, "failed to save processed file", zap.String("id", id), zap.Error(err))
-				s.StatusQueue <- StatusUpdate{ID: id, Status: StatusFailed}
+				s.StatusQueue <- StatusUpdate{ID: id, TrackArtist: meta.Artist, TrackTitle: meta.Title, Status: StatusFailed}
 				return
 			}
 		}
 		if status[0] != nil {
 			zaplog.InfoC(ctx, "processing callback running - got processing status", zap.String("id", id), zap.String("status", status[0].(*ProcessingStatus).Status))
-			s.StatusQueue <- StatusUpdate{ID: id, Status: status[0].(*ProcessingStatus).Status}
+			s.StatusQueue <- StatusUpdate{ID: id, TrackArtist: meta.Artist, TrackTitle: meta.Title, Status: status[0].(*ProcessingStatus).Status}
 		}
 		if status[0] != nil && status[0].(*ProcessingStatus).Status == StatusComplete || status[0].(*ProcessingStatus).Status == StatusFailed {
 			zaplog.InfoC(ctx, "processing callback exiting", zap.String("id", id), zap.String("status", status[0].(*ProcessingStatus).Status))
@@ -220,7 +232,7 @@ func (s *Service) PlaylistProcessingCallback(ctx context.Context, id string) {
 	for {
 		isProcesssing := false
 		countDone := 0
-		wg := sync.WaitGroup{}
+		wg := new(sync.WaitGroup)
 		for _, entry := range entries {
 			wg.Add(1)
 			s.StatusQueue <- StatusUpdate{ID: entry, ShouldCallback: true, Callback: func(stat StatusUpdate) {
@@ -244,7 +256,7 @@ func (s *Service) PlaylistProcessingCallback(ctx context.Context, id string) {
 
 func (s *Service) GetStatus(ctx context.Context, id string) (*StatusUpdate, error) {
 	var data StatusUpdate
-	wg := sync.WaitGroup{}
+	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	s.StatusQueue <- StatusUpdate{ID: id, ShouldCallback: true, Callback: func(stat StatusUpdate) {
 		data = stat
