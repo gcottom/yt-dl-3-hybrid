@@ -22,10 +22,10 @@ type Client struct {
 }
 
 func NewYoutubeClient(config *config.Config, httpClient *http_client.HTTPClient) *Client {
-	youtube.DefaultClient = youtube.EmbeddedClient
+	youtube.DefaultClient = youtube.IOSClient
 	embeddedClient := &youtube.Client{HTTPClient: httpClient.Client}
 	embeddedClient.GetVideo("0P19rsu3jXY")
-	youtube.DefaultClient = youtube.AndroidClient
+	youtube.DefaultClient = youtube.IOSClient
 	androidClient := &youtube.Client{HTTPClient: httpClient.Client}
 	androidClient.GetVideo("0P19rsu3jXY")
 	return &Client{
